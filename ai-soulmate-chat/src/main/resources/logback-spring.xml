@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <!--屏蔽tomcat容器报错-->
+    <logger name="org.apache.catalina.core.StandardHostValve" level="INFO">
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator>
+                <expression>return m.getMessage().contains("getOutputStream() has already been called") || m.getMessage().contains("Unable to handle the Spring Security Exception");</expression>
+            </evaluator>
+            <onMatch>DENY</onMatch>
+            <onMismatch>NEUTRAL</onMismatch>
+        </filter>
+    </logger>
+    <!--屏蔽Security过滤器报错-->
+    <logger name="org.springframework.security.web.access.ExceptionTranslationFilter" level="INFO">
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator>
+                <expression>return m.getMessage().contains("Unable to handle the Spring Security Exception");</expression>
+            </evaluator>
+            <onMatch>DENY</onMatch>
+            <onMismatch>NEUTRAL</onMismatch>
+        </filter>
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI伴侣聊天屋</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        love: '#ff78a8',
+                        loveLight: '#ffe6ef',
+                        darkLove: '#e65c8c'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 滚动条美化 */
+        #chatContent::-webkit-scrollbar {width:6px}
+        #chatContent::-webkit-scrollbar-thumb {background:#ffb6c9;border-radius:3px}
+        /* 消息打字闪烁光标 */
+        .cursor-blink{animation: blink 1s infinite}
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+    </style>
+</head>
+<body class="bg-gradient-to-br from-rose-50 to-pink-100 min-h-screen">
+<div class="container mx-auto max-w-5xl py-6 px-3">
+    <!-- 顶部标题栏 -->
+    <div class="flex justify-between items-center mb-4">
+        <h1 class="text-[26px] font-bold text-love flex items-center gap-2">
+            <i class="fa fa-heart"></i> AI伴侣聊天屋
+        </h1>
+        <button id="openSetBtn" class="bg-love hover:bg-darkLove text-white px-4 py-2 rounded-full shadow-md transition">
+            <i class="fa fa-cog mr-1"></i>人设配置
+        </button>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <!-- 左侧女友信息卡片 -->
+        <div class="lg:col-span-1 bg-white rounded-xl shadow-lg p-4 h-fit">
+            <div class="text-center">
+                <div class="w-[140px] h-[140px] rounded-full overflow-hidden border-4 border-loveLight mx-auto mb-3">
+                    <img id="girlAvatar" th:src="${soulmate_avatar_info.avatarUrl ?: '/default.png'}" class="w-full h-full object-cover">
+                </div>
+                <h3 id="girlName" class="text-xl font-semibold text-gray-700" th:text="${soulmate_info.gfName}">小桃</h3>
+                <p id="girlPerson" class="text-sm text-gray-500 mt-1" th:text="${soulmate_info.characterTag}">温柔黏人、贴心小女友</p>
+                <p class="text-xs text-love mt-1">性别：<span id="sexShow" th:text="${soulmate_info.sex ?: '女'}">女</span> | <span id="ageShow" th:text="${soulmate_info.age ?: 18}">18</span>岁</p>
+                <p class="text-xs text-gray-50 mt-1">爱好：<span id="hobbyShow" th:text="${soulmate_info.hobby ?: '追剧美食'}">追剧美食</span></p>
+            </div>
+            <div class="mt-4 pt-3 border-t">
+                <p class="text-sm text-gray-600"><i class="fa fa-info-circle text-love mr-1"></i>人设详情：</p>
+                <p id="girlRemark" class="text-sm mt-1 text-gray-500" th:text="${soulmate_info.detailPrompt}">喜欢撒娇，生气需要哄</p>
+            </div>
+        </div>
+        <!-- 右侧聊天区域 -->
+        <div class="lg:col-span-3 flex flex-col bg-white rounded-xl shadow-lg overflow-hidden h-[650px]">
+            <!-- 聊天记录容器 -->
+            <div id="chatContent" class="flex-1 overflow-y-auto p-5 space-y-4">
+                <div class="flex gap-3">
+                    <img id="chatAvatarLeft" th:src="${soulmate_avatar_info.avatarUrl ?: '/default.png'}" class="w-10 h-10 rounded-full object-cover shrink-0">
+                    <div class="bg-loveLight px-4 py-3 rounded-xl rounded-tl-none max-w-[75%]">
+                        <p id="firstMsg"></p>
+                    </div>
+                </div>
+            </div>
+            <!-- 发送输入框 -->
+            <div class="border-t p-4 flex gap-3">
+                <textarea id="userInput" rows="2" placeholder="输入你想说的话..."
+                          class="flex-1 border border-gray-200 rounded-lg p-3 focus:outline-love resize-none"></textarea>
+                <button id="sendBtn" class="bg-love hover:bg-darkLove text-white px-5 rounded-lg transition shrink-0">
+                    <i class="fa fa-paper-plane"></i> 发送
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 配置弹窗【姓名/年龄/生日/爱好/性别/标签/人设/头像 全部字段】 -->
+<div id="setModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 overflow-y-auto py-6">
+    <div class="bg-white w-full max-w-md rounded-xl p-6 m-3 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold text-gray-700">自定义伴侣人设</h2>
+            <button id="closeModal" class="text-gray-400 hover:text-gray-700"><i class="fa fa-times text-xl"></i></button>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <label class="text-sm text-gray-600">头像上传（本地图片）</label>
+                <input type="file" id="avatarUpload" accept="image/*"
+                       class="w-full border rounded p-2 mt-1">
+                <!-- 弹窗头像预览 -->
+                <div class="mt-2 flex justify-center">
+                    <img id="previewImg" src="" class="w-24 h-24 rounded-full object-cover border-2 border-loveLight hidden">
+                </div>
+            </div>
+            <div>
+                <label class="text-sm text-gray-600">伴侣名字</label>
+                <input id="nameInput" type="text" class="w-full border rounded p-2 mt-1" th:value="${soulmate_info.gfName}" placeholder="例如：小桃">
+            </div>
+            <div>
+                <label class="text-sm text-gray-600">伴侣性别</label>
+                <div class="flex gap-6 mt-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="sexRadio" value="男" th:checked="${soulmate_info.sex eq '男'}">男
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="sexRadio" value="女" th:checked="${soulmate_info.sex ?: '女'}">女
+                    </label>
+                </div>
+            </div>
+<!--            <div>-->
+<!--                <label class="text-sm text-gray-600">年龄</label>-->
+<!--                <input id="ageInput" type="number" min="1" max="99" class="w-full border rounded p-2 mt-1" th:value="${soulmate_info.age ?:18}" placeholder="18">-->
+<!--            </div>-->
+            <div>
+                <label class="text-sm text-gray-600">生日</label>
+                <input id="birthInput" type="date" class="w-full border rounded p-2 mt-1" th:value="${soulmate_info.birth}">
+            </div>
+            <div>
+                <label class="text-sm text-gray-600">兴趣爱好</label>
+                <input id="hobbyInput" type="text" class="w-full border rounded p-2 mt-1" th:value="${soulmate_info.hobby}" placeholder="追剧、美食、旅行">
+            </div>
+            <div>
+                <label class="text-sm text-gray-600">性格标签</label>
+                <input id="personInput" type="text" class="w-full border rounded p-2 mt-1" th:value="${soulmate_info.characterTag}" placeholder="温柔傲娇 /高冷御姐 /活泼元气">
+            </div>
+            <div>
+                <label class="text-sm text-gray-600">人设详细设定</label>
+                <textarea id="remarkInput" rows="3" class="w-full border rounded p-2 mt-1 resize-none" th:text="${soulmate_info.detailPrompt}"
+                          placeholder="你是我的女朋友，说话可爱撒娇，不能太官方，日常闲聊风格"></textarea>
+            </div>
+            <button id="saveSet" class="w-full bg-love text-white py-2 rounded-lg hover:bg-darkLove transition">保存配置</button>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    // 后端数据
+    const soulmateInitData = /*[[${soulmate_info}]]*/{};
+    const avatarInitData = /*[[${soulmate_avatar_info}]]*/{};
+    const STORAGE_KEY = "girlFriendSet";
+    let tempUploadUrl = ""; //临时存本次上传图片地址
+
+    let girlConfig = {
+        avatarId: avatarInitData?.avatarId ?? "",
+        soulmateId: soulmateInitData?.soulmateId ?? "",
+        avatar: avatarInitData?.avatarUrl || "/default.png",
+        name: soulmateInitData?.gfName || "小桃",
+        age: soulmateInitData?.age || 18,
+        birth: soulmateInitData?.birth || "",
+        hobby: soulmateInitData?.hobby || "追剧美食",
+        person: soulmateInitData?.characterTag || "",
+        remark: soulmateInitData?.detailPrompt || "",
+        sex: soulmateInitData?.sex || "女"
+    };
+
+    // dom
+    const openSetBtn = document.getElementById("openSetBtn");
+    const closeModal = document.getElementById("closeModal");
+    const setModal = document.getElementById("setModal");
+    const saveSet = document.getElementById("saveSet");
+    const girlAvatar = document.getElementById("girlAvatar");
+    const chatAvatarLeft = document.getElementById("chatAvatarLeft");
+    const previewImg = document.getElementById("previewImg");
+    const avatarUpload = document.getElementById("avatarUpload");
+    const nameInput = document.getElementById("nameInput");
+    // const ageInput = document.getElementById("ageInput");
+    const birthInput = document.getElementById("birthInput");
+    const hobbyInput = document.getElementById("hobbyInput");
+    const personInput = document.getElementById("personInput");
+    const remarkInput = document.getElementById("remarkInput");
+    const chatContent = document.getElementById("chatContent");
+    const userInput = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    //初始化页面
+    function initConfig(){
+        girlAvatar.src = girlConfig.avatar;
+        chatAvatarLeft.src = girlConfig.avatar;
+        nameInput.value = girlConfig.name;
+        // ageInput.value = girlConfig.age;
+        birthInput.value = girlConfig.birth;
+        hobbyInput.value = girlConfig.hobby;
+        personInput.value = girlConfig.person;
+        remarkInput.value = girlConfig.remark;
+        document.querySelectorAll('input[name="sexRadio"]').forEach(item=>{
+            item.checked = item.value === girlConfig.sex;
+        })
+        document.getElementById("girlName").innerText = girlConfig.name;
+        document.getElementById("sexShow").innerText = girlConfig.sex;
+        document.getElementById("ageShow").innerText = girlConfig.age;
+        document.getElementById("hobbyShow").innerText = girlConfig.hobby;
+        document.getElementById("girlRemark").innerText = girlConfig.remark;
+
+        const previewImg = document.getElementById("previewImg");
+        if(girlConfig.avatar && girlConfig.avatar !== "/default.png"){
+            previewImg.src = girlConfig.avatar;
+            previewImg.classList.remove("hidden");
+        }else{
+            previewImg.classList.add("hidden");
+            previewImg.src = "";
+        }
+
+    }
+    initConfig();
+
+    async function loadFirstHello() {
+        try {
+            let res = await fetch("/chat/get-first-msg?soulmateId=" + girlConfig.soulmateId);
+            let helloText = await res.text();
+            document.getElementById("firstMsg").innerText = helloText;
+        } catch (err) {
+            document.getElementById("firstMsg").innerText = "哈喽~终于来找我聊天啦，今天过得怎么样呀？";
+        }
+    }
+    loadFirstHello();
+
+    openSetBtn.onclick = ()=> {
+        setModal.classList.replace("hidden","flex");
+        // 每次打开弹窗重新加载头像预览
+        const previewImg = document.getElementById("previewImg");
+        if(girlConfig.avatar && girlConfig.avatar !== "/default.png"){
+            previewImg.src = girlConfig.avatar;
+            previewImg.classList.remove("hidden");
+        }else{
+            previewImg.classList.add("hidden");
+            previewImg.src = "";
+        }
+    };
+    closeModal.onclick = ()=> setModal.classList.add("hidden");
+
+    //========= 选中文件立刻预览+自动上传（核心修复）=========
+    avatarUpload.onchange = async function(){
+        const file = this.files[0];
+        if(!file) return;
+        //1.本地预览（瞬间出现，不用等后端）
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = e=>{
+            previewImg.src = e.target.result;
+            previewImg.classList.remove("hidden");
+        }
+        //2.异步上传后端拿到线上url
+        let fd = new FormData();
+        fd.append("file",file);
+        let res = await fetch("/avatar/soulmate/upload",{method:"POST",body:fd});
+        let url = await res.text();
+        tempUploadUrl = url;
+        //左侧头像同步刷新
+        girlAvatar.src = url;
+        chatAvatarLeft.src = url;
+    }
+
+    //保存按钮
+    saveSet.onclick = async () => {
+        if(tempUploadUrl) girlConfig.avatar = tempUploadUrl;
+        let selectSex = document.querySelector('input[name="sexRadio"]:checked')?.value || "女";
+        girlConfig.name = nameInput.value.trim() || "小桃";
+        girlConfig.birth = birthInput.value.trim();
+        //自动计算年龄
+        girlConfig.age = getAge(girlConfig.birth) || 18;
+        girlConfig.hobby = hobbyInput.value.trim();
+        girlConfig.person = personInput.value.trim() || "温柔女友";
+        girlConfig.remark = remarkInput.value.trim() || "软萌撒娇女友，日常闲聊";
+        girlConfig.sex = selectSex;
+
+        let formData = new FormData();
+        if(girlConfig.soulmateId) formData.append("id", girlConfig.soulmateId);
+        formData.append("gfName", girlConfig.name);
+        formData.append("age", girlConfig.age);
+        if(girlConfig.birth) formData.append("birth", girlConfig.birth);
+        formData.append("hobby", girlConfig.hobby);
+        formData.append("characterTag", girlConfig.person);
+        formData.append("detailPrompt", girlConfig.remark);
+        formData.append("sex", selectSex);
+        if(girlConfig.avatarId) formData.append("avatarId", girlConfig.avatarId);
+        if(girlConfig.avatar) formData.append("avatarUrl", girlConfig.avatar);
+
+        await fetch("/setting/soulmate/update", {method:"POST", body: formData});
+        tempUploadUrl = "";
+        previewImg.classList.add("hidden");
+        previewImg.src = "";
+        setModal.classList.add("hidden");
+
+        initConfig();
+    };
+
+    /**
+     * @param {string} birthStr yyyy-MM-dd
+     * @returns {number} 周岁 | 未来生日返回0
+     */
+    function getAge(birthStr) {
+        const birthArr = birthStr.split('-');
+        const birthYear = parseInt(birthArr[0]);
+        const birthMonth = parseInt(birthArr[1]) - 1;
+        const birthDay = parseInt(birthArr[2]);
+
+        const birthDate = new Date(birthYear, birthMonth, birthDay);
+        const now = new Date();
+
+        // 生日在未来，返回0（和后端一致）
+        if (birthDate > now) {
+            return 0;
+        }
+
+        let age = now.getFullYear() - birthDate.getFullYear();
+        // 当年生日还没过，年龄-1
+        const currBirthDay = new Date(now.getFullYear(), birthMonth, birthDay);
+        if (now < currBirthDay) {
+            age--;
+        }
+        return age;
+    }
+
+    //聊天发送【修改后：打字机逐字输出，剔除data:前缀】
+    async function sendChat(){
+        const content = userInput.value.trim();
+        if(!content) return;
+        userInput.value = "";
+        //我方消息
+        chatContent.innerHTML += `
+        <div class="flex gap-3 justify-end">
+            <div class="bg-love px-4 py-3 rounded-xl rounded-tr-none text-white max-w-[75%]">
+                <p>${content}</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-gray-300 shrink-0 flex items-center justify-center text-white">我</div>
+        </div>
+    `;
+        //AI消息容器
+        const aiWrap = document.createElement("div");
+        aiWrap.className = "flex gap-3";
+        aiWrap.innerHTML = `
+        <img src="${girlConfig.avatar}" class="w-10 h-10 rounded-full object-cover shrink-0">
+        <div class="bg-loveLight px-4 py-3 rounded-xl rounded-tl-none max-w-[75%]">
+            <p id="tempAiText"></p>
+        </div>
+    `;
+        chatContent.appendChild(aiWrap);
+        const tempText = aiWrap.querySelector("#tempAiText");
+        chatContent.scrollTop = chatContent.scrollHeight;
+
+        //存储完整AI文本、打字队列
+        let fullAiText = "";
+        let typeQueue = [];
+        let typingLock = false;
+
+        // 打字机渲染函数：逐个字符输出
+        async function typeWriter(){
+            if(typingLock || typeQueue.length ===0) return;
+            typingLock = true;
+            const char = typeQueue.shift();
+            tempText.innerText += char;
+            chatContent.scrollTop = chatContent.scrollHeight;
+            await sleep(35); //打字速度，数值越大越慢，30~50最佳
+            typingLock = false;
+            typeWriter();
+        }
+        //简易延时工具
+        function sleep(ms){
+            return new Promise(res=>setTimeout(res,ms))
+        }
+
+        //请求SSE接口
+        const resp = await fetch("/chat/ai-chat-stream",{
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json",
+                "Accept":"text/event-stream"
+            },
+            body:JSON.stringify({userPrompt:content,soulmateId:girlConfig.soulmateId})
+        });
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+
+        while(true){
+            const {done,value} = await reader.read();
+            if(done) break;
+            let chunk = decoder.decode(value);
+            //【关键1：剔除SSE返回的data:前缀+换行】
+            chunk = chunk.replaceAll("data:","").replaceAll("\n","");
+            fullAiText += chunk;
+            //新字符推入打字队列
+            for(let c of chunk){
+                typeQueue.push(c);
+            }
+            //启动打字
+            typeWriter();
+        }
+    }
+    sendBtn.onclick = sendChat;
+    userInput.onkeydown = (e)=>{
+        if(e.key === "Enter" && !e.shiftKey){
+            e.preventDefault();
+            sendChat();
+        }
+    }
+</script>
+</body>
+</html>

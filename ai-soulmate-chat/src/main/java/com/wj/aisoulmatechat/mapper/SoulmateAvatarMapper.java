@@ -1,0 +1,21 @@
+package com.wj.aisoulmatechat.mapper;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.wj.aisoulmatechat.entity.SoulmateAvatar;
+import com.wj.aisoulmatechat.vo.SoulmateAvatarVo;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+
+public interface SoulmateAvatarMapper extends BaseMapper<SoulmateAvatar> {
+    //根据伴侣id删除头像记录
+    default int deleteBySoulmateId(Long soulmateId){
+        LambdaQueryWrapper<SoulmateAvatar> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SoulmateAvatar::getSoulmateId, soulmateId);
+        return delete(wrapper);
+    }
+
+    //根据伴侣ID获取头像信息（伴侣头像唯一）
+    @Select("SELECT id as avatar_id,soulmate_id,avatar_url FROM soulmate_avatar WHERE soulmate_id = #{sid}")
+    SoulmateAvatarVo getOneVoBySoulmateId(@Param("sid") Long sid);
+}
