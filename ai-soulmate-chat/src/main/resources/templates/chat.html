@@ -88,10 +88,7 @@
                     <p id="girlPerson" class="text-sm text-gray-500 mt-1" th:text="${soulmate_info.characterTag}">温柔黏人、贴心小女友</p>
                     <p class="text-xs text-love mt-1">性别：<span id="sexShow" th:text="${soulmate_info.sex ?: '女'}">女</span> | <span id="ageShow" th:text="${soulmate_info.age ?: 18}">18</span>岁</p>
                     <p class="text-xs text-gray-50 mt-1">爱好：<span id="hobbyShow" th:text="${soulmate_info.hobby ?: '追剧美食'}">追剧美食</span></p>
-                </div>
-                <div class="mt-4 pt-3 border-t">
-                    <p class="text-sm text-gray-600"><i class="fa fa-info-circle text-love mr-1"></i>人设详情：</p>
-                    <p id="girlRemark" class="text-sm mt-1 text-gray-500" th:text="${soulmate_info.detailPrompt}">喜欢撒娇，生气需要哄</p>
+                    <p class="text-sm mt-1 text-gray-500" id="girlRemark" th:text="${soulmate_info.detailPrompt}">喜欢撒娇，生气需要哄</p>
                 </div>
             </div>
 
@@ -192,10 +189,6 @@
                     </label>
                 </div>
             </div>
-            <!--            <div>-->
-            <!--                <label class="text-sm text-gray-600">年龄</label>-->
-            <!--                <input id="ageInput" type="number" min="1" max="99" class="w-full border rounded p-2 mt-1" th:value="${soulmate_info.age ?:18}" placeholder="18">-->
-            <!--            </div>-->
             <div>
                 <label class="text-sm text-gray-600">生日</label>
                 <input id="birthInput" type="date" class="w-full border rounded p-2 mt-1" th:value="${soulmate_info.birth}">
@@ -249,7 +242,6 @@
     const previewImg = document.getElementById("previewImg");
     const avatarUpload = document.getElementById("avatarUpload");
     const nameInput = document.getElementById("nameInput");
-    // const ageInput = document.getElementById("ageInput");
     const birthInput = document.getElementById("birthInput");
     const hobbyInput = document.getElementById("hobbyInput");
     const personInput = document.getElementById("personInput");
@@ -319,7 +311,6 @@
         girlAvatar.src = girlConfig.avatar;
         chatAvatarLeft.src = girlConfig.avatar;
         nameInput.value = girlConfig.name;
-        // ageInput.value = girlConfig.age;
         birthInput.value = girlConfig.birth;
         hobbyInput.value = girlConfig.hobby;
         personInput.value = girlConfig.person;
@@ -424,7 +415,7 @@
         chatAvatarLeft.src = url;
     }
 
-    //保存按钮
+    //保存按钮 —— 【修复点：保存后强制刷新聊天头像】
     saveSet.onclick = async () => {
         if(tempUploadUrl) girlConfig.avatar = tempUploadUrl;
         let selectSex = document.querySelector('input[name="sexRadio"]:checked')?.value || "女";
@@ -454,6 +445,12 @@
         previewImg.classList.add("hidden");
         previewImg.src = "";
         setModal.classList.add("hidden");
+
+        // ========== 关键修复代码开始 ==========
+        // 保存配置后，立即同步聊天区头像 + 左侧信息卡片头像
+        girlAvatar.src = girlConfig.avatar;
+        chatAvatarLeft.src = girlConfig.avatar;
+        // ========== 关键修复代码结束 ==========
 
         initConfig();
     };
@@ -557,6 +554,7 @@
                 typeQueue.push(c);
             }
             //启动打字
+            typeWriter();
             typeWriter();
         }
     }

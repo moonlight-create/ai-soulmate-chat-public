@@ -4,6 +4,7 @@ import com.wj.aisoulmatechat.config.properties.MyServerConfigProperties;
 import com.wj.aisoulmatechat.service.SoulmateAvatarService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import opennlp.tools.util.StringUtil;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,7 +29,7 @@ public class SoulmateAvatarController {
     @GetMapping("/get")
     public String getAvatar() {
         String url = soulmateAvatarService.getSoumateAvatar(DEFAULT_USER_ID);
-        return url == null ? DEFAULT_AVATAR : url;
+        return StringUtil.isEmpty(url) ? DEFAULT_AVATAR : url;
     }
 
     /**

@@ -39,9 +39,6 @@ public class PageController {
     // 跳转聊天房间页面，携带soulmateId
     @GetMapping("/toChat")
     public String toChat(@RequestParam("sid") Long sid, Model model){
-        System.out.println("当前Redis host: " + redisProperties.getHost());
-        System.out.println("当前Redis port: " + redisProperties.getPort());
-
         SoulmateVo soulmateVo = soulmateService.getById(sid);
 
         String birth = soulmateVo.getBirth();
