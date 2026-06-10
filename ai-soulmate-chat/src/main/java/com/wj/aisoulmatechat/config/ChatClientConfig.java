@@ -10,6 +10,7 @@ import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -30,19 +31,20 @@ public class ChatClientConfig {
      */
     @Bean
     public Advisor loggerAdvisor() {
-        return new SimpleLoggerAdvisor();
+        return new SimpleLoggerAdvisor(2);
     }
 
     @Bean
     public ChatClient chatClient(DashScopeChatModel dashScopeChatModel
-                                ,MessageChatMemoryAdvisor messageChatMemoryAdvisor
+                                , MessageChatMemoryAdvisor messageChatMemoryAdvisor
                                 , AiUseTools aiUseTools
                                 , @Qualifier("loggerAdvisor") Advisor loggerAdvisor
                                 , QuestionAnswerAdvisor qaAdvisor
                                 , RepeatQuestionLimitAdvisor repeatQuestionLimitAdvisor
-                                ,SafeGuardAdvisor safeGuardAdvisor
-                                ,@Qualifier("mijiaMcpTools")ToolCallbackProvider toolCallbackProvider
-    ){
+                                , SafeGuardAdvisor safeGuardAdvisor
+                                , @Qualifier("mijiaMcpTools")ToolCallbackProvider toolCallbackProvider
+                                , RetrievalAugmentationAdvisor retrievalAugmentationAdvisor
+                                 ){
         return ChatClient.builder(dashScopeChatModel)
                 .defaultTools(aiUseTools)
                 .defaultToolCallbacks(toolCallbackProvider)
@@ -51,7 +53,9 @@ public class ChatClientConfig {
                     ,repeatQuestionLimitAdvisor
                     ,messageChatMemoryAdvisor
                     ,loggerAdvisor
-                    ,qaAdvisor)
+//                    ,qaAdvisor
+                    ,retrievalAugmentationAdvisor
+                )
                 .build();
     }
 

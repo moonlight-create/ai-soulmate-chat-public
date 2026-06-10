@@ -26,36 +26,98 @@
         /* 消息打字闪烁光标 */
         .cursor-blink{animation: blink 1s infinite}
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+        /* 备忘录滚动条 */
+        #noteContent::-webkit-scrollbar {width:4px}
+        #noteContent::-webkit-scrollbar-thumb {background:#ffb6c9;border-radius:2px}
+        #noteListWrap::-webkit-scrollbar {width:4px}
+        #noteListWrap::-webkit-scrollbar-thumb {background:#ffb6c9;border-radius:2px}
+
+        /* ========== 横线笔记本背景样式 ========== */
+        .line-note {
+            background-image: linear-gradient(#ffd6e0 1px, transparent 1px);
+            background-size: 100% 28px;
+            background-color: #fffef9;
+            line-height: 28px;
+        }
+        /* 动漫风长方形橡皮按钮 */
+        .eraser-btn {
+            background: #ffc8d8;
+            border-radius: 3px;
+            padding: 3px 9px;
+            color: #c75174;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            border: 1px solid #f8b8cc;
+            cursor: pointer;
+            box-shadow: inset 0 1px 0 #ffe0eb, 0 1px 2px rgba(0,0,0,0.08);
+        }
+        .eraser-btn:hover {
+            background: #ffb3c8;
+            color: #b03f60;
+            transform: scale(1.05);
+            box-shadow: inset 0 1px 0 #ffd4e2, 0 2px 4px rgba(0,0,0,0.12);
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-rose-50 to-pink-100 min-h-screen">
 <div class="container mx-auto max-w-5xl py-6 px-3">
-    <!-- 顶部标题栏 -->
+    <!-- 顶部标题栏 【修改处：新增聊天记录按钮，两个按钮加间距】 -->
     <div class="flex justify-between items-center mb-4">
         <h1 class="text-[26px] font-bold text-love flex items-center gap-2">
             <i class="fa fa-heart"></i> AI伴侣聊天屋
         </h1>
-        <button id="openSetBtn" class="bg-love hover:bg-darkLove text-white px-4 py-2 rounded-full shadow-md transition">
-            <i class="fa fa-cog mr-1"></i>人设配置
-        </button>
+        <div class="flex gap-3">
+            <button id="chatRecordBtn" class="bg-love hover:bg-darkLove text-white px-4 py-2 rounded-full shadow-md transition">
+                <i class="fa fa-history mr-1"></i>聊天记录
+            </button>
+            <button id="openSetBtn" class="bg-love hover:bg-darkLove text-white px-4 py-2 rounded-full shadow-md transition">
+                <i class="fa fa-cog mr-1"></i>人设配置
+            </button>
+        </div>
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        <!-- 左侧女友信息卡片 -->
-        <div class="lg:col-span-1 bg-white rounded-xl shadow-lg p-4 h-fit">
-            <div class="text-center">
-                <div class="w-[140px] h-[140px] rounded-full overflow-hidden border-4 border-loveLight mx-auto mb-3">
-                    <img id="girlAvatar" th:src="${soulmate_avatar_info.avatarUrl ?: '/default.png'}" class="w-full h-full object-cover">
+        <!-- 左侧整列：固定高度 650px，和右侧聊天窗口对齐 -->
+        <div class="lg:col-span-1 flex flex-col gap-4 h-[650px]">
+            <!-- 左侧女友信息卡片 -->
+            <div class="bg-white rounded-xl shadow-lg p-4 h-fit">
+                <div class="text-center">
+                    <div class="w-[140px] h-[140px] rounded-full overflow-hidden border-4 border-loveLight mx-auto mb-3">
+                        <img id="girlAvatar" th:src="${soulmate_avatar_info.avatarUrl ?: '/default.png'}" class="w-full h-full object-cover">
+                    </div>
+                    <h3 id="girlName" class="text-xl font-semibold text-gray-700" th:text="${soulmate_info.gfName}">小桃</h3>
+                    <p id="girlPerson" class="text-sm text-gray-500 mt-1" th:text="${soulmate_info.characterTag}">温柔黏人、贴心小女友</p>
+                    <p class="text-xs text-love mt-1">性别：<span id="sexShow" th:text="${soulmate_info.sex ?: '女'}">女</span> | <span id="ageShow" th:text="${soulmate_info.age ?: 18}">18</span>岁</p>
+                    <p class="text-xs text-gray-50 mt-1">爱好：<span id="hobbyShow" th:text="${soulmate_info.hobby ?: '追剧美食'}">追剧美食</span></p>
                 </div>
-                <h3 id="girlName" class="text-xl font-semibold text-gray-700" th:text="${soulmate_info.gfName}">小桃</h3>
-                <p id="girlPerson" class="text-sm text-gray-500 mt-1" th:text="${soulmate_info.characterTag}">温柔黏人、贴心小女友</p>
-                <p class="text-xs text-love mt-1">性别：<span id="sexShow" th:text="${soulmate_info.sex ?: '女'}">女</span> | <span id="ageShow" th:text="${soulmate_info.age ?: 18}">18</span>岁</p>
-                <p class="text-xs text-gray-50 mt-1">爱好：<span id="hobbyShow" th:text="${soulmate_info.hobby ?: '追剧美食'}">追剧美食</span></p>
+                <div class="mt-4 pt-3 border-t">
+                    <p class="text-sm text-gray-600"><i class="fa fa-info-circle text-love mr-1"></i>人设详情：</p>
+                    <p id="girlRemark" class="text-sm mt-1 text-gray-500" th:text="${soulmate_info.detailPrompt}">喜欢撒娇，生气需要哄</p>
+                </div>
             </div>
-            <div class="mt-4 pt-3 border-t">
-                <p class="text-sm text-gray-600"><i class="fa fa-info-circle text-love mr-1"></i>人设详情：</p>
-                <p id="girlRemark" class="text-sm mt-1 text-gray-500" th:text="${soulmate_info.detailPrompt}">喜欢撒娇，生气需要哄</p>
+
+            <!-- 备忘录：剩余高度自动填充 + 横线笔记本样式 -->
+            <div class="bg-white rounded-xl shadow-lg p-4 flex flex-col flex-1">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="text-gray-700 font-semibold flex items-center gap-2">
+                        <i class="fa fa-book text-love"></i>备忘录
+                    </h4>
+                    <div class="flex gap-2">
+                        <!-- 新增浏览按钮，和保存按钮样式统一 -->
+                        <button id="viewNoteBtn" class="text-love hover:text-darkLove transition text-sm">
+                            <i class="fa fa-eye"></i> 浏览
+                        </button>
+                        <button id="saveNoteBtn" class="text-love hover:text-darkLove transition text-sm">
+                            <i class="fa fa-save"></i> 保存
+                        </button>
+                    </div>
+                </div>
+                <!-- 增加 line-note 横线本样式，移除原有边框，贴合笔记本效果 -->
+                <textarea id="noteContent"
+                          class="flex-1 border-0 rounded-lg p-2 text-sm resize-none outline-none line-note"
+                          placeholder="在这里记录笔记、提醒事项..."></textarea>
             </div>
         </div>
+
         <!-- 右侧聊天区域 -->
         <div class="lg:col-span-3 flex flex-col bg-white rounded-xl shadow-lg overflow-hidden h-[650px]">
             <!-- 聊天记录容器 -->
@@ -75,6 +137,25 @@
                     <i class="fa fa-paper-plane"></i> 发送
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- 备忘录浏览弹窗（横线笔记本样式） -->
+<div id="noteModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+    <div class="bg-white w-full max-w-lg rounded-xl shadow-xl p-5 m-4 max-h-[80vh] flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+            <h4 class="text-gray-700 font-semibold flex items-center gap-2">
+                <i class="fa fa-book text-love"></i> 全部备忘录
+            </h4>
+            <button id="closeNoteModal" class="text-gray-400 hover:text-gray-700 text-xl">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <!-- 笔记列表容器 横线背景 -->
+        <div id="noteListWrap" class="flex-1 overflow-y-auto line-note p-2">
+            <!-- 笔记列表由JS动态渲染 -->
+            <div id="noteList"></div>
         </div>
     </div>
 </div>
@@ -111,10 +192,10 @@
                     </label>
                 </div>
             </div>
-<!--            <div>-->
-<!--                <label class="text-sm text-gray-600">年龄</label>-->
-<!--                <input id="ageInput" type="number" min="1" max="99" class="w-full border rounded p-2 mt-1" th:value="${soulmate_info.age ?:18}" placeholder="18">-->
-<!--            </div>-->
+            <!--            <div>-->
+            <!--                <label class="text-sm text-gray-600">年龄</label>-->
+            <!--                <input id="ageInput" type="number" min="1" max="99" class="w-full border rounded p-2 mt-1" th:value="${soulmate_info.age ?:18}" placeholder="18">-->
+            <!--            </div>-->
             <div>
                 <label class="text-sm text-gray-600">生日</label>
                 <input id="birthInput" type="date" class="w-full border rounded p-2 mt-1" th:value="${soulmate_info.birth}">
@@ -142,6 +223,7 @@
     const soulmateInitData = /*[[${soulmate_info}]]*/{};
     const avatarInitData = /*[[${soulmate_avatar_info}]]*/{};
     const STORAGE_KEY = "girlFriendSet";
+    const NOTE_LIST_KEY = "note_list_data";
     let tempUploadUrl = ""; //临时存本次上传图片地址
 
     let girlConfig = {
@@ -175,6 +257,62 @@
     const chatContent = document.getElementById("chatContent");
     const userInput = document.getElementById("userInput");
     const sendBtn = document.getElementById("sendBtn");
+    // 新增聊天记录按钮DOM
+    const chatRecordBtn = document.getElementById("chatRecordBtn");
+
+    // 备忘录DOM
+    const noteContent = document.getElementById("noteContent");
+    const saveNoteBtn = document.getElementById("saveNoteBtn");
+    const viewNoteBtn = document.getElementById("viewNoteBtn");
+    const noteModal = document.getElementById("noteModal");
+    const closeNoteModal = document.getElementById("closeNoteModal");
+    const noteList = document.getElementById("noteList");
+    const NOTE_KEY = "ai_soulmate_note";
+
+    // 初始化假数据 + 读取本地存储
+    function initNoteList() {
+        let list = JSON.parse(localStorage.getItem(NOTE_LIST_KEY)) || [];
+        // 首次使用写入模拟假数据
+        if (list.length === 0) {
+            list = [
+                { id: 1, content: "第一条备忘：记录日常聊天小细节", time: "2026-06-09 10:20" },
+                { id: 2, content: "第二条备忘：对方喜欢的话题和兴趣", time: "2026-06-09 11:15" },
+                { id: 3, content: "第三条备忘：重要提醒，记得及时互动", time: "2026-06-09 14:30" }
+            ];
+            localStorage.setItem(NOTE_LIST_KEY, JSON.stringify(list));
+        }
+        renderNoteList(list);
+    }
+
+    // 渲染备忘录列表（标准橡皮图标+动漫长方形橡皮样式）
+    function renderNoteList(list) {
+        let html = "";
+        list.forEach(item => {
+            html += `
+                <div class="flex items-start justify-between py-2 border-b border-loveLight/30">
+                    <div class="flex-1 pr-2">
+                        <div class="text-xs text-gray-400">${item.time}</div>
+                        <div class="text-sm text-gray-700 break-all">${item.content}</div>
+                    </div>
+                    <button class="del-note-btn eraser-btn ml-2" data-id="${item.id}">
+                        <i class="fa fa-eraser"></i>
+                    </button>
+                </div>
+            `;
+        });
+        noteList.innerHTML = html;
+
+        // 绑定删除事件
+        document.querySelectorAll(".del-note-btn").forEach(btn => {
+            btn.onclick = function () {
+                const delId = parseInt(this.dataset.id);
+                let dataList = JSON.parse(localStorage.getItem(NOTE_LIST_KEY)) || [];
+                dataList = dataList.filter(n => n.id !== delId);
+                localStorage.setItem(NOTE_LIST_KEY, JSON.stringify(dataList));
+                renderNoteList(dataList);
+            }
+        });
+    }
 
     //初始化页面
     function initConfig(){
@@ -204,8 +342,40 @@
             previewImg.src = "";
         }
 
+        // 加载本地缓存备忘录
+        noteContent.value = localStorage.getItem(NOTE_KEY) || "";
+        // 初始化备忘录列表
+        initNoteList();
     }
     initConfig();
+
+    // 备忘录保存：同时存入单行文本 + 追加到列表
+    saveNoteBtn.onclick = function () {
+        const val = noteContent.value.trim();
+        localStorage.setItem(NOTE_KEY, val);
+        if (val) {
+            let list = JSON.parse(localStorage.getItem(NOTE_LIST_KEY)) || [];
+            const now = new Date();
+            const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            const newId = list.length > 0 ? Math.max(...list.map(i=>i.id)) + 1 : 1;
+            list.unshift({
+                id: newId,
+                content: val,
+                time: timeStr
+            });
+            localStorage.setItem(NOTE_LIST_KEY, JSON.stringify(list));
+            initNoteList();
+        }
+    };
+
+    // 打开浏览弹窗
+    viewNoteBtn.onclick = function () {
+        noteModal.classList.replace("hidden", "flex");
+    };
+    // 关闭浏览弹窗
+    closeNoteModal.onclick = function () {
+        noteModal.classList.add("hidden");
+    };
 
     async function loadFirstHello() {
         try {
@@ -397,6 +567,11 @@
             sendChat();
         }
     }
+
+    // 可在此处添加聊天记录按钮点击事件逻辑
+    // chatRecordBtn.onclick = function(){
+    //     你的业务代码
+    // }
 </script>
 </body>
 </html>

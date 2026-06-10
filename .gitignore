@@ -64,6 +64,7 @@ avatar/soulmate/file/
 **/src/main/resources/application-*.yml
 **/src/main/resources/application.yml
 **/data/
+my.md
 
 #git rm --cached -f -r **/.gitattributes
 
