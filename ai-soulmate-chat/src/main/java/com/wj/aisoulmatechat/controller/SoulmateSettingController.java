@@ -26,6 +26,8 @@ public class SoulmateSettingController {
         LoginUser loginUser = (LoginUser) auth.getPrincipal();
         Long userId = loginUser.getUser().getId();
         soul.setUserId(userId);
+        //填充默认字段
+        soul.setDefaultValue();
         soulmateService.saveSoulmate(soul,StringUtil.isEmpty(avatarUrl)?DEFAULT_AVATAR:avatarUrl);
         return "redirect:/select_soulmate";
     }

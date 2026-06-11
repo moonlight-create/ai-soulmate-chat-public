@@ -62,9 +62,11 @@ avatar/soulmate/file/
 .gitattributes
 **/.gitattributes
 **/src/main/resources/application-*.yml
-**/src/main/resources/application.yml
+!**/src/main/resources/application-guest.yml
+#**/src/main/resources/application.yml
 **/data/
 my.md
+ai-soulmate-chat/src/main/resources/mcp-servers-config.json
 
 #git rm --cached -f -r **/.gitattributes
 

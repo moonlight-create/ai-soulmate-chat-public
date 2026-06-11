@@ -57,6 +57,11 @@
             transform: scale(1.05);
             box-shadow: inset 0 1px 0 #ffd4e2, 0 2px 4px rgba(0,0,0,0.12);
         }
+        /* 必填星号样式 */
+        .required {
+            color: #ef4444;
+            margin-left: 2px;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-rose-50 to-pink-100 min-h-screen">
@@ -174,8 +179,9 @@
                     <img id="previewImg" src="" class="w-24 h-24 rounded-full object-cover border-2 border-loveLight hidden">
                 </div>
             </div>
+            <!-- 伴侣名字 - 必填 -->
             <div>
-                <label class="text-sm text-gray-600">伴侣名字</label>
+                <label class="text-sm text-gray-600">伴侣名字<span class="required">*</span></label>
                 <input id="nameInput" type="text" class="w-full border rounded p-2 mt-1" th:value="${soulmate_info.gfName}" placeholder="例如：小桃">
             </div>
             <div>
@@ -197,12 +203,14 @@
                 <label class="text-sm text-gray-600">兴趣爱好</label>
                 <input id="hobbyInput" type="text" class="w-full border rounded p-2 mt-1" th:value="${soulmate_info.hobby}" placeholder="追剧、美食、旅行">
             </div>
+            <!-- 性格标签 - 必填 -->
             <div>
-                <label class="text-sm text-gray-600">性格标签</label>
+                <label class="text-sm text-gray-600">性格标签<span class="required">*</span></label>
                 <input id="personInput" type="text" class="w-full border rounded p-2 mt-1" th:value="${soulmate_info.characterTag}" placeholder="温柔傲娇 /高冷御姐 /活泼元气">
             </div>
+            <!-- 人设详细设定 - 必填 -->
             <div>
-                <label class="text-sm text-gray-600">人设详细设定</label>
+                <label class="text-sm text-gray-600">人设详细设定<span class="required">*</span></label>
                 <textarea id="remarkInput" rows="3" class="w-full border rounded p-2 mt-1 resize-none" th:text="${soulmate_info.detailPrompt}"
                           placeholder="你是我的女朋友，说话可爱撒娇，不能太官方，日常闲聊风格"></textarea>
             </div>
@@ -415,17 +423,39 @@
         chatAvatarLeft.src = url;
     }
 
-    //保存按钮 —— 【修复点：保存后强制刷新聊天头像】
+    //保存按钮 —— 【添加必填校验】
     saveSet.onclick = async () => {
+        // ========== 新增：必填项校验 ==========
+        const nameVal = nameInput.value.trim();
+        const personVal = personInput.value.trim();
+        const remarkVal = remarkInput.value.trim();
+
+        if (!nameVal) {
+            alert("请填写伴侣名字！");
+            nameInput.focus();
+            return;
+        }
+        if (!personVal) {
+            alert("请填写性格标签！");
+            personInput.focus();
+            return;
+        }
+        if (!remarkVal) {
+            alert("请填写人设详细设定！");
+            remarkInput.focus();
+            return;
+        }
+        // ====================================
+
         if(tempUploadUrl) girlConfig.avatar = tempUploadUrl;
         let selectSex = document.querySelector('input[name="sexRadio"]:checked')?.value || "女";
-        girlConfig.name = nameInput.value.trim() || "小桃";
+        girlConfig.name = nameVal;
         girlConfig.birth = birthInput.value.trim();
         //自动计算年龄
         girlConfig.age = getAge(girlConfig.birth) || 18;
         girlConfig.hobby = hobbyInput.value.trim();
-        girlConfig.person = personInput.value.trim() || "温柔女友";
-        girlConfig.remark = remarkInput.value.trim() || "软萌撒娇女友，日常闲聊";
+        girlConfig.person = personVal;
+        girlConfig.remark = remarkVal;
         girlConfig.sex = selectSex;
 
         let formData = new FormData();

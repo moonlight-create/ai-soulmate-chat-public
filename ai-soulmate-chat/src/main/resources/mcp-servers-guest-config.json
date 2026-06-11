@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "mijia-python-server": {
+      "command": "D:\\anaconda3\\python.exe",
+      "args": ["-m", "mcp_server"],
+      "env": {
+        "MIJIA_API_URL": "http://127.0.0.1:5000/api",
+        "MIJIA_TOKEN": "xxx"
+      }
+    }
+  }
+}

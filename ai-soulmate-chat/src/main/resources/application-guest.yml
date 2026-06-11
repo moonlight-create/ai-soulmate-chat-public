@@ -1,0 +1,73 @@
+server:
+  port: 4321
+
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:file:${user.dir}/ai-soulmate-chat/data/soulmate_db;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      database: 0
+
+  ai:
+    dashscope:
+      api-key: sk-xxx #换成自己的大模型api-key
+      chat:
+        options:
+          model: qwen-plus
+          temperature: 0.2
+          top-p: 0.3
+      audio:
+        speech:
+          api-key: sk-xxx #换成自己的大模型api-key
+    openai:
+      api-key: sk-xxx #换成自己的大模型api-key
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      chat:
+        options:
+          model: qwen-turbo
+    # yml配置mcp参数
+    mcp:
+      client:
+        type: sync
+        request-timeout: 60s
+        toolcallback:
+          enable: true
+        stdio:
+          # json文件配置参数
+          servers-configuration: classpath:mcp-servers-guest-config.json
+# yml配置mcp参数
+#          connections:
+#            mcp-server1:
+#              command: D:\\anaconda3\\python.exe
+#              args:
+#                - -m
+#                - mcp_server
+#              env:
+#                MIJIA_API_URL: http://127.0.0.1:5000/api
+#                MIJIA_TOKEN:
+
+my:
+  ip:
+    avatar_upload_ip: 127.0.0.1
+  server:
+    ip: http://${my.ip.avatar_upload_ip}:${server.port}
+# 自定义ToolCallbackProvider配置mcp参数
+  mcp:
+    mijia:
+      path: D:\\anaconda3\\python.exe #换成自己环境的python地址
+      mijia_api_url: http://127.0.0.1:5000/api
+      mijia_token: xxx #换成自己的米家access-token
+      mijia_init_timeout_s: 60
+      mijia_timeout_s: 60
+      mijia_schema_cache: true
+

@@ -42,7 +42,8 @@ public class ChatClientConfig {
                                 , QuestionAnswerAdvisor qaAdvisor
                                 , RepeatQuestionLimitAdvisor repeatQuestionLimitAdvisor
                                 , SafeGuardAdvisor safeGuardAdvisor
-                                , @Qualifier("mijiaMcpTools")ToolCallbackProvider toolCallbackProvider
+//                                , @Qualifier("mijiaMcpTools")ToolCallbackProvider toolCallbackProvider
+                                , ToolCallbackProvider toolCallbackProvider
                                 , RetrievalAugmentationAdvisor retrievalAugmentationAdvisor
                                  ){
         return ChatClient.builder(dashScopeChatModel)

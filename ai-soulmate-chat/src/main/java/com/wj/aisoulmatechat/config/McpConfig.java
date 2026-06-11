@@ -27,7 +27,7 @@ public class McpConfig {
     private final MyMcpServerConfigProperties myMcpServerConfigProperties;
 //    String pythonPath = "D:\\anaconda3\\python.exe";
 
-    @Bean
+//    @Bean
     public ToolCallbackProvider mijiaMcpTools() {
         MyMcpServerConfigProperties.MijiaProps mijiaProps = myMcpServerConfigProperties.getMijia();
         // 1. 构建启动参数（Windows 优先用完整路径，避免命令找不到）
