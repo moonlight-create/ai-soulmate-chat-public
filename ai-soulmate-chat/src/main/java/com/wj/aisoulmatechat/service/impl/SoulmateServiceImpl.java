@@ -222,7 +222,7 @@ public class SoulmateServiceImpl extends ServiceImpl<UserSoulmateMapper, UserSou
         String sourceText = assembleMsgToString(needSummary);
 
         DashScopeChatOptions firstOptions = DashScopeChatOptions.builder()
-                .withModel("qwen-turbo")
+                .withModel("qwen-flash")
                 .withTemperature(0.1d)
                 .withTopP(0.3d)
                 .withMaxToken(400)
@@ -311,7 +311,7 @@ public class SoulmateServiceImpl extends ServiceImpl<UserSoulmateMapper, UserSou
         List<Document> textSliceList = sliceSourceText(sourceText, SLICE_LEN);
 
         DashScopeChatOptions firstOptions = DashScopeChatOptions.builder()
-                .withModel("qwen-turbo")
+                .withModel("qwen-flash")
                 .withTemperature(0.1d)
                 .withTopP(0.3d)
                 .withMaxToken(400)
