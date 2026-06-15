@@ -1,6 +1,7 @@
 package com.wj.aisoulmatechat.config;
 
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.wj.aisoulmatechat.config.customadvisors.KeywordFilterAdvisor;
 import com.wj.aisoulmatechat.config.customadvisors.RepeatQuestionLimitAdvisor;
 import com.wj.aisoulmatechat.tools.AiUseTools;
 import org.springframework.ai.chat.client.ChatClient;
@@ -45,6 +46,7 @@ public class ChatClientConfig {
 //                                , @Qualifier("mijiaMcpTools")ToolCallbackProvider toolCallbackProvider
                                 , ToolCallbackProvider toolCallbackProvider
                                 , RetrievalAugmentationAdvisor retrievalAugmentationAdvisor
+                                , KeywordFilterAdvisor keywordFilterAdvisor
                                  ){
         return ChatClient.builder(dashScopeChatModel)
                 .defaultTools(aiUseTools)
@@ -55,7 +57,8 @@ public class ChatClientConfig {
                     ,messageChatMemoryAdvisor
                     ,loggerAdvisor
 //                    ,qaAdvisor
-                    ,retrievalAugmentationAdvisor
+                    ,retrievalAugmentationAdvisor,
+                    keywordFilterAdvisor
                 )
                 .build();
     }

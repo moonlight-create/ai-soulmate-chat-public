@@ -100,6 +100,7 @@ public class AiChatController {
                         .param(ChatMemory.CONVERSATION_ID, convId)
 //                        .param(QuestionAnswerAdvisor.FILTER_EXPRESSION, dynamicSr)
                         .param(QuestionAnswerAdvisor.FILTER_EXPRESSION, filterExpr)
+                                .param("userPrompt", userPrompt)
                 )
 //                .advisors(a->a.param(QuestionAnswerAdvisor.FILTER_EXPRESSION,filterExpr))
 //                .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID,convId))

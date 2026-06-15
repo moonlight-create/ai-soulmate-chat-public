@@ -33,6 +33,7 @@
         <mybatis-plus.version>3.5.9</mybatis-plus.version>
         <h2.version>2.3.232</h2.version>
         <spring.session.version>3.4.6</spring.session.version>
+        <ik.version>5.1.0</ik.version>
     </properties>
 
     <dependencyManagement>
@@ -114,6 +115,12 @@
                 <groupId>org.springframework.session</groupId>
                 <artifactId>spring-session-bom</artifactId>
                 <version>${spring.session.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>cn.bestwu</groupId>
+                <artifactId>ik-analyzers</artifactId>
+                <version>${ik.version}</version>
             </dependency>
 
         </dependencies>

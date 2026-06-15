@@ -3,8 +3,8 @@ spring:
     name: ai-soulmate-chat
 
   profiles:
-#    active: pro
-    active: local
+    active: pro
+#    active: test
 
   servlet:
     multipart:

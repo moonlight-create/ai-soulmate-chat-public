@@ -5,6 +5,7 @@ import cn.hutool.core.date.LocalDateTimeUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wj.aisoulmatechat.constants.Constant;
 import com.wj.aisoulmatechat.service.AiToolsService;
+import com.wj.aisoulmatechat.util.IkKeywordUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.document.Document;
@@ -36,11 +37,15 @@ public class AiUseTools {
         Long soulmateId = (Long)context.getContext().get("soulmateId");
         String convId = (String) context.getContext().get("convId");
 
+        //使用分词器将用户信息分词入库metadata，方便后续筛选召回信息
+        String keyword = IkKeywordUtil.extractKeywords(content);
+
         Map<String,Object> meta = Map.of(
                 "userId", userId,
                 "soulmateId", soulmateId,
                 "conversationId", String.valueOf(convId),
-                "doc_type", "important_scene"
+                "doc_type", "important_scene",
+                "keyword", keyword
         );
 
         Document doc = Document.builder()

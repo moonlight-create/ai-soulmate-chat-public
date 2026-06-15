@@ -11,6 +11,7 @@ import com.wj.aisoulmatechat.mapper.SoulmateAvatarMapper;
 import com.wj.aisoulmatechat.mapper.UserSoulmateMapper;
 import com.wj.aisoulmatechat.service.SoulmateService;
 import com.wj.aisoulmatechat.util.AgeCulUtil;
+import com.wj.aisoulmatechat.util.IkKeywordUtil;
 import com.wj.aisoulmatechat.util.RedisCacheUtil;
 import com.wj.aisoulmatechat.vo.SoulmateVo;
 import jakarta.annotation.Resource;
@@ -248,11 +249,15 @@ public class SoulmateServiceImpl extends ServiceImpl<UserSoulmateMapper, UserSou
             return;
         }
 
+        //使用分词器将用户信息分词入库metadata，方便后续筛选召回信息
+        String keyword = IkKeywordUtil.extractKeywords(summary);
+
         // 摘要落向量库
         // 固定type，方便后续过滤
         Map<String,Object> meta = new HashMap<>();
         meta.put("conversationId",convId);
         meta.put("doc_type","history_summary");
+        meta.put("keyword",keyword);
         Document doc = Document.builder().text(summary).metadata(meta).build();
         vectorStore.add(List.of(doc));
 

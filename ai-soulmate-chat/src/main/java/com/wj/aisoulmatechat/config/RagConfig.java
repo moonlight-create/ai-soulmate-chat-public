@@ -77,6 +77,7 @@ public class RagConfig {
         //2、组装RAG增强器，可配置是否允许空上下文（原生默认空上下文拒绝回答）
         RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder()
                 .documentRetriever(retriever)
+                .order(0)
                 // 允许召回文档为空时继续让模型回答
                 .queryAugmenter(ContextualQueryAugmenter.builder()
                         .allowEmptyContext(true)

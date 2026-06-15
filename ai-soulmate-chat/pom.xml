@@ -107,6 +107,11 @@
             <artifactId>spring-ai-starter-mcp-client</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>cn.bestwu</groupId>
+            <artifactId>ik-analyzers</artifactId>
+        </dependency>
+
     </dependencies>
 
 <!--    <build>-->
