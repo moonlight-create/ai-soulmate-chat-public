@@ -63,3 +63,19 @@ create table persistent_logins (
    last_used timestamp not null
 );
 
+-- AI聊天记忆表
+create table ai_soulmate_chat_memory (
+     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '自增主键',
+     msg_uuid VARCHAR(64) NOT NULL COMMENT '单条消息唯一UUID',
+     conversation_id VARCHAR(128) NOT NULL COMMENT '会话唯一ID',
+     msg_type TINYINT NOT NULL COMMENT '消息类型 0系统 1用户 2助手 3工具响应',
+     content TEXT COMMENT '消息文本内容',
+     metadata TEXT COMMENT '元数据JSON字符串',
+     media TEXT COMMENT '用户媒体资源列表JSON',
+     tool_calls TEXT COMMENT '助手工具调用集合JSON',
+     tool_responses TEXT COMMENT '工具返回响应集合JSON',
+     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '消息入库时间'
+--      UNIQUE KEY uk_conv_msg_uuid (conversation_id, msg_uuid),
+--      INDEX idx_conversation_id (conversation_id)
+);
+

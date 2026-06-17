@@ -35,6 +35,24 @@ spring:
       chat:
         options:
           model: qwen-turbo
+# milvus配置
+    vectorstore:
+      milvus:
+        initialize_schema: true
+        client:
+          host: xxx
+          port: 19530
+          username: xxx
+          password: xxx
+        database-name: ai_soulmate
+        collection-name: ai_soulmate_rag
+        embedding-dimension: 1536
+  rabbitmq:
+    host: xx.xx.xx.xx
+    port: 5672
+    username: xxx
+    password: xxx
+    virtual-host: /
     # yml配置mcp参数
     mcp:
       client:
@@ -55,6 +73,22 @@ spring:
 #              env:
 #                MIJIA_API_URL: http://127.0.0.1:5000/api
 #                MIJIA_TOKEN:
+
+# RocketMQ
+rocketmq:
+  name-server: xx.xx.xx.xx:9876
+  # 生产者配置
+  producer:
+    group: xx_group
+    send-message-timeout: 3000
+    compress-message-body-threshold: 4096
+    retry-times-when-send-failed: 2
+    retry-times-when-send-async-failed: 2
+    # 消费者配置
+  consumer:
+    pull-batch-size: 10
+    retry-times: 3
+    pull-interval: 1000
 
 my:
   ip:

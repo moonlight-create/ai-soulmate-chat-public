@@ -11,7 +11,8 @@ GC_LOG_FILE="${LOG_DIR}/gc.log"
 PID_FILE="./app.pid"
 
 # JDK17 G1 配置（日志已修改到 logs 目录）
-JVM_OPTS="-Xms1g -Xmx1g \
+# 固定Xmx256m，最小化内存占用，避免系统内存耗尽
+JVM_OPTS="-Xms256m -Xmx256m \
 -XX:MaxGCPauseMillis=150 \
 -XX:+HeapDumpOnOutOfMemoryError \
 -XX:HeapDumpPath=./heapdump.hprof \
@@ -26,7 +27,12 @@ start() {
         return 1
     fi
 
-    # 关键：自动创建日志目录，不存在就新建
+    # 关键1：设置当前shell创建的子进程OOM权重=-1000，永久不被系统OOM优先杀死
+    echo -1000 > /proc/self/oom_score_adj
+    # 优化系统swap，优先使用物理内存，减少磁盘交换卡顿
+    echo 10 > /proc/sys/vm/swappiness
+
+    # 自动创建日志目录，不存在就新建
     mkdir -p "$LOG_DIR"
 
     if [ -f "$PID_FILE" ];then
@@ -46,6 +52,10 @@ start() {
     echo "启动成功，PID: $(cat $PID_FILE)"
     echo "业务日志查看：tail -f $LOG_FILE"
     echo "GC日志查看：tail -f ${GC_LOG_FILE}.0"
+    # 校验OOM权重是否生效
+    TARGET_PID=$(cat $PID_FILE)
+    OOM_ADJ=$(cat /proc/${TARGET_PID}/oom_score_adj)
+    echo "进程OOM保护权重 oom_score_adj = ${OOM_ADJ}"
 }
 
 # 停止应用
@@ -84,6 +94,7 @@ status() {
         PID=$(cat $PID_FILE)
         if ps -p $PID > /dev/null;then
             echo "应用运行中，PID: $PID，端口: $APP_PORT"
+            echo "进程OOM保护权重 oom_score_adj = $(cat /proc/${PID}/oom_score_adj)"
         else
             echo "进程已异常退出"
             rm -f $PID_FILE

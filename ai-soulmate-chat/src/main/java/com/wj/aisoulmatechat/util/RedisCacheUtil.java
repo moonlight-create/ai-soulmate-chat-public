@@ -60,4 +60,7 @@ public class RedisCacheUtil {
         return MEM_KEY_PREFIX + convId;
     }
 
+    public List<String> listGetAll(String uuidKey) {
+        return stringRedisTemplate.opsForList().range(uuidKey, 0, -1);
+    }
 }

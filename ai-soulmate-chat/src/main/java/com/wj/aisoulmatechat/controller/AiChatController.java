@@ -5,13 +5,13 @@ import com.wj.aisoulmatechat.config.memory.CustomFullWindowChatMemory;
 import com.wj.aisoulmatechat.config.properties.BasePromptConfigProperties;
 import com.wj.aisoulmatechat.dto.UserPromptDTO;
 import com.wj.aisoulmatechat.security.LoginUser;
+import com.wj.aisoulmatechat.service.ChatMemoryDbService;
 import com.wj.aisoulmatechat.service.SoulmateService;
+import com.wj.aisoulmatechat.vo.ChatMemoryGroupVO;
 import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.memory.ChatMemoryRepository;
-import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -19,21 +19,16 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
-import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.ai.vectorstore.SearchRequest;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.Map;
 
-@Controller
+@RestController
 @RequestMapping("/chat")
 public class AiChatController {
 
@@ -43,15 +38,17 @@ public class AiChatController {
     private final ChatClient chatClient;
     private final CustomFullWindowChatMemory messageWindowChatMemory;
     private final QuestionAnswerAdvisor questionAnswerAdvisor;
+    private final ChatMemoryDbService chatMemoryService;
 //    private final RetrievalAugmentationAdvisor retrievalAugmentationAdvisor;
 
-    public AiChatController(@Qualifier("dashscopeChatModel") ChatModel dashscopeChatModel,SoulmateService soulmateService,BasePromptConfigProperties basePromptConfigProperties,ChatClient chatClient,CustomFullWindowChatMemory messageWindowChatMemory,QuestionAnswerAdvisor questionAnswerAdvisor) {
+    public AiChatController(@Qualifier("dashscopeChatModel") ChatModel dashscopeChatModel,SoulmateService soulmateService,BasePromptConfigProperties basePromptConfigProperties,ChatClient chatClient,CustomFullWindowChatMemory messageWindowChatMemory,QuestionAnswerAdvisor questionAnswerAdvisor,ChatMemoryDbService chatMemoryService) {
         this.dashScopeChatModel = dashscopeChatModel;
         this.soulmateService = soulmateService;
         this.basePromptConfigProperties = basePromptConfigProperties;
         this.chatClient = chatClient;
         this.messageWindowChatMemory = messageWindowChatMemory;
         this.questionAnswerAdvisor = questionAnswerAdvisor;
+        this.chatMemoryService = chatMemoryService;
 //        this.retrievalAugmentationAdvisor = retrievalAugmentationAdvisor;
     }
 
@@ -110,7 +107,7 @@ public class AiChatController {
 
     @SneakyThrows
     @GetMapping("/get-first-msg")
-    @ResponseBody
+//    @ResponseBody
     public String getFirstMsg(@RequestParam("soulmateId") Long soulmateId,Authentication auth) {
         LoginUser loginUser = (LoginUser) auth.getPrincipal();
         Long userId = loginUser.getUser().getId();
@@ -165,5 +162,19 @@ public class AiChatController {
 //        return dashScopeChatModel.stream(prompt)
 //                .map(chatResp -> chatResp.getResult().getOutput().getText());
 //    }
+
+    /**
+     * 根据会话ID获取按天分组聊天记录
+     * @param soulmateId 伴侣ID
+     * @return 按天分组消息列表
+     */
+    @SneakyThrows
+    @GetMapping("/memory/group_by_day")
+    public List<ChatMemoryGroupVO> getChatGroupByDay(@RequestParam("soulmateId") Long soulmateId,Authentication auth) {
+        LoginUser loginUser = (LoginUser) auth.getPrincipal();
+        Long userId = loginUser.getUser().getId();
+        String convId = "soulmate:memory:" + userId + ":" + soulmateId;
+        return chatMemoryService.getConversationGroupByDay(convId);
+    }
 
 }

@@ -62,6 +62,13 @@
             color: #ef4444;
             margin-left: 2px;
         }
+        /* 聊天记录分组分割线 */
+        .group-block .text-center span {
+            position: relative;
+        }
+        .whitespace-pre-wrap {
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-rose-50 to-pink-100 min-h-screen">
@@ -219,6 +226,24 @@
     </div>
 </div>
 
+<!-- 聊天记录弹窗 按天分组 -->
+<div id="chatRecordModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 overflow-y-auto py-8">
+    <div class="bg-white w-full max-w-3xl rounded-xl shadow-xl p-5 m-4 max-h-[85vh] flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+            <h4 class="text-gray-700 font-semibold flex items-center gap-2 text-lg">
+                <i class="fa fa-history text-love"></i> 历史聊天记录
+            </h4>
+            <button id="closeChatRecordModal" class="text-gray-400 hover:text-gray-700 text-xl">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <!-- 聊天记录滚动容器 -->
+        <div id="chatRecordWrap" class="flex-1 overflow-y-auto space-y-6 pr-2">
+            <!-- JS动态渲染分组内容 -->
+        </div>
+    </div>
+</div>
+
 <script th:inline="javascript">
     // 后端数据
     const soulmateInitData = /*[[${soulmate_info}]]*/{};
@@ -259,6 +284,10 @@
     const sendBtn = document.getElementById("sendBtn");
     // 新增聊天记录按钮DOM
     const chatRecordBtn = document.getElementById("chatRecordBtn");
+    // 聊天记录弹窗DOM
+    const chatRecordModal = document.getElementById("chatRecordModal");
+    const closeChatRecordModal = document.getElementById("closeChatRecordModal");
+    const chatRecordWrap = document.getElementById("chatRecordWrap");
 
     // 备忘录DOM
     const noteContent = document.getElementById("noteContent");
@@ -312,6 +341,57 @@
                 renderNoteList(dataList);
             }
         });
+    }
+
+    /**
+     * 渲染按天分组聊天记录
+     * @param {Array} groupList 后端返回 ChatMemoryGroupVO 数组
+     */
+    function renderChatRecordGroup(groupList) {
+        if (!groupList || groupList.length === 0) {
+            chatRecordWrap.innerHTML = `<div class="text-center text-gray-400 py-10">暂无历史聊天记录</div>`;
+            return;
+        }
+        let html = "";
+        groupList.forEach(group => {
+            // 分组标题：今天 / 昨天 / 2026-06-15
+            html += `
+                <div class="group-block">
+                    <div class="text-center text-sm text-gray-500 mb-3 relative before:content-[''] before:absolute before:w-full before:h-[1px] before:bg-gray-200 before:left-0 before:top-1/2">
+                        <span class="bg-white px-3 relative z-10">${group.groupTitle}</span>
+                    </div>
+                    <div class="space-y-3 pl-2 pr-2">
+            `;
+            // 遍历当天消息
+            group.msgList.forEach(msg => {
+                // msgType 1 用户，2 AI伴侣
+                if (msg.msgType === 1) {
+                    // 用户消息 居右 粉色背景
+                    html += `
+                        <div class="flex gap-3 justify-end">
+                            <div class="bg-love px-4 py-3 rounded-xl rounded-tr-none text-white max-w-[75%]">
+                                <p class="whitespace-pre-wrap">${msg.content || ""}</p>
+                                <div class="text-xs opacity-70 mt-1 text-right">${msg.createTime}</div>
+                            </div>
+                            <div class="w-10 h-10 rounded-full bg-gray-400 shrink-0 flex items-center justify-center text-white">我</div>
+                        </div>
+                    `;
+                } else if (msg.msgType === 2) {
+                    // AI伴侣消息 居左 浅粉背景
+                    html += `
+                        <div class="flex gap-3">
+                            <img src="${girlConfig.avatar}" class="w-10 h-10 rounded-full object-cover shrink-0">
+                            <div class="bg-loveLight px-4 py-3 rounded-xl rounded-tl-none max-w-[75%]">
+                                <p class="whitespace-pre-wrap text-gray-700">${msg.content || ""}</p>
+                                <div class="text-xs text-gray-400 mt-1">${msg.createTime}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            html += `</div></div>`;
+        });
+        chatRecordWrap.innerHTML = html;
     }
 
     //初始化页面
@@ -596,10 +676,25 @@
         }
     }
 
-    // 可在此处添加聊天记录按钮点击事件逻辑
-    // chatRecordBtn.onclick = function(){
-    //     你的业务代码
-    // }
+    // 打开聊天记录弹窗、请求后端分组数据
+    chatRecordBtn.onclick = async function () {
+        // 展示弹窗
+        chatRecordModal.classList.replace("hidden", "flex");
+        chatRecordWrap.innerHTML = `<div class="text-center text-gray-400 py-10">加载中...</div>`;
+        try {
+            // girlConfig.soulmateId 为 Long 伴侣ID，传给后端接口
+            const res = await fetch(`/chat/memory/group_by_day?soulmateId=${girlConfig.soulmateId}`);
+            const groupData = await res.json();
+            renderChatRecordGroup(groupData);
+        } catch (err) {
+            chatRecordWrap.innerHTML = `<div class="text-center text-red-400 py-10">加载记录失败，请稍后重试</div>`;
+            console.error("加载聊天记录异常：", err);
+        }
+    };
+    // 关闭聊天记录弹窗
+    closeChatRecordModal.onclick = function () {
+        chatRecordModal.classList.add("hidden");
+    };
 </script>
 </body>
 </html>
