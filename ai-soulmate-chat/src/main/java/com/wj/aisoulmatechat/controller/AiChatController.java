@@ -1,12 +1,14 @@
 package com.wj.aisoulmatechat.controller;
 
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
+import com.wj.aisoulmatechat.common.result.Result;
 import com.wj.aisoulmatechat.config.memory.CustomFullWindowChatMemory;
 import com.wj.aisoulmatechat.config.properties.BasePromptConfigProperties;
 import com.wj.aisoulmatechat.dto.UserPromptDTO;
 import com.wj.aisoulmatechat.security.LoginUser;
 import com.wj.aisoulmatechat.service.ChatMemoryDbService;
 import com.wj.aisoulmatechat.service.SoulmateService;
+import com.wj.aisoulmatechat.util.SecurityUserUtil;
 import com.wj.aisoulmatechat.vo.ChatMemoryGroupVO;
 import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
@@ -54,15 +56,15 @@ public class AiChatController {
 
     @SneakyThrows
     @PostMapping("/ai-chat")
-    public String aiChat(@RequestParam("prompt") String userPrompt) {
-        return dashScopeChatModel.call(userPrompt);
+    public Result<String> aiChat(@RequestParam("prompt") String userPrompt) {
+        String res = dashScopeChatModel.call(userPrompt);
+        return Result.ok(res);
     }
 
     @SneakyThrows
     @PostMapping(value = "/ai-chat-stream",produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> aiChatStream(@RequestBody UserPromptDTO userPromptDto, Authentication auth) {
-        LoginUser loginUser = (LoginUser) auth.getPrincipal();
-        Long userId = loginUser.getUser().getId();
+    public Flux<String> aiChatStream(@RequestBody UserPromptDTO userPromptDto) {
+        Long userId = SecurityUserUtil.getCurrentUserId();
         Long soulmateId = userPromptDto.getSoulmateId();
         String userPrompt = userPromptDto.getUserPrompt();
         String convId = "soulmate:memory:" + userId + ":" + soulmateId;
@@ -83,10 +85,10 @@ public class AiChatController {
                 .toolContext(Map.of("soulmateId",soulmateId,"userId",userId,"convId",convId))
                 .advisors(spec -> spec
 //                        .advisors(questionAnswerAdvisor)
-                        .param(ChatMemory.CONVERSATION_ID, convId)
+                                .param(ChatMemory.CONVERSATION_ID, convId)
 //                        .param(QuestionAnswerAdvisor.FILTER_EXPRESSION, filterExpr)
-                        .param(VectorStoreDocumentRetriever.FILTER_EXPRESSION, filterExpr)
-                        .param("userPrompt", userPrompt)
+                                .param(VectorStoreDocumentRetriever.FILTER_EXPRESSION, filterExpr)
+                                .param("userPrompt", userPrompt)
                 )
                 .stream()
                 .content();
@@ -94,10 +96,8 @@ public class AiChatController {
 
     @SneakyThrows
     @GetMapping("/get-first-msg")
-//    @ResponseBody
-    public String getFirstMsg(@RequestParam("soulmateId") Long soulmateId,Authentication auth) {
-        LoginUser loginUser = (LoginUser) auth.getPrincipal();
-        Long userId = loginUser.getUser().getId();
+    public Result<String> getFirstMsg(@RequestParam("soulmateId") Long soulmateId) {
+        Long userId = SecurityUserUtil.getCurrentUserId();
         String convId = "soulmate:memory:" + userId + ":" + soulmateId;
         //拼接基础+动态人设
         String fullSysPrompt = soulmateService.getFullSysPrompt(userId, soulmateId, basePromptConfigProperties.getBase());
@@ -111,8 +111,8 @@ public class AiChatController {
 
         // 组装消息：System人设 + 用户指令
         Prompt prompt = new Prompt(List.of(
-            new SystemMessage(finalPrompt),
-            new UserMessage(basePromptConfigProperties.getHello())
+                new SystemMessage(finalPrompt),
+                new UserMessage(basePromptConfigProperties.getHello())
         ),firstOptions);
         ChatResponse resp = dashScopeChatModel.call(prompt);
         String aiAnswer = resp.getResult().getOutput().getText();
@@ -129,7 +129,7 @@ public class AiChatController {
         List<Message> saveMsgList = List.of(new AssistantMessage(aiAnswer));
         messageWindowChatMemory.add(convId,saveMsgList);
 
-        return aiAnswer;
+        return Result.ok(aiAnswer);
     }
 
 
@@ -157,11 +157,11 @@ public class AiChatController {
      */
     @SneakyThrows
     @GetMapping("/memory/group_by_day")
-    public List<ChatMemoryGroupVO> getChatGroupByDay(@RequestParam("soulmateId") Long soulmateId,Authentication auth) {
-        LoginUser loginUser = (LoginUser) auth.getPrincipal();
-        Long userId = loginUser.getUser().getId();
+    public Result<List<ChatMemoryGroupVO>> getChatGroupByDay(@RequestParam("soulmateId") Long soulmateId) {
+        Long userId = SecurityUserUtil.getCurrentUserId();
         String convId = "soulmate:memory:" + userId + ":" + soulmateId;
-        return chatMemoryService.getConversationGroupByDay(convId);
+        List<ChatMemoryGroupVO> list = chatMemoryService.getConversationGroupByDay(convId);
+        return Result.ok(list);
     }
 
 }

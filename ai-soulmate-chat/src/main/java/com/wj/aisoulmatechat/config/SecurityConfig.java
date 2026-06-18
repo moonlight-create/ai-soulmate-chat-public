@@ -59,7 +59,7 @@ public class SecurityConfig {
 //        http.exceptionHandling(c -> c.accessDeniedHandler(customAccessDeniedHandler));
         http
                 .authorizeHttpRequests(auth->auth
-                        .requestMatchers("/css/**","/js/**","/h2-console/**","/avatar/soulmate/file/**","/chat/ai-chat-stream").permitAll()
+                        .requestMatchers("/css/**","/js/**","/h2-console/**","/avatar/soulmate/file/**","/chat/ai-chat-stream","/favicon.ico").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex

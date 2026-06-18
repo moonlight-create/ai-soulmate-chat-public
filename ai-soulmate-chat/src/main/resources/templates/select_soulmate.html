@@ -122,7 +122,8 @@
             <span>创建AI伴侣</span>
             <span class="close-btn" onclick="closeDialog()">×</span>
         </div>
-        <form th:action="@{/setting/soulmate/add}" method="post" id="createForm">
+        <!-- 移除form原生action、submit，改为JS异步提交 -->
+        <div id="createForm">
             <div class="form-item">
                 <label><span class="required">*</span>伴侣名称</label>
                 <input class="ipt" name="gfName" placeholder="输入伴侣昵称">
@@ -147,9 +148,10 @@
             </div>
             <div class="form-footer">
                 <button type="button" class="btn-cancel" onclick="closeDialog()">取消</button>
-                <button type="submit" class="btn-save">保存创建</button>
+                <!-- 绑定点击事件，异步提交 -->
+                <button type="button" class="btn-save" onclick="submitCreate()">保存创建</button>
             </div>
-        </form>
+        </div>
     </div>
 </div>
 
@@ -170,59 +172,94 @@
         previewImg.src = '';
         fileInp.value = '';
         avaUrl.value = '';
+        // 清空输入框
+        createForm.querySelectorAll('input,textarea').forEach(el => el.value = '');
     }
     //关闭弹窗
     function closeDialog(){
         mask.style.display = 'none';
     }
 
-    //头像上传ajax
+    // 头像上传ajax
     fileInp.onchange = async function(){
         let file = this.files[0];
         if(!file) return;
         let fd = new FormData();
         fd.append("file",file);
         let res = await fetch("/avatar/soulmate/upload",{method:'POST',body:fd});
-        let url = await res.text();
-        avaUrl.value = url;
-        tip.innerText = '✅ 头像上传成功';
-        // 预览赋值、显示
-        previewImg.src = url;
-        previewImg.style.display = 'block';
+        let jsonRes = await res.json();
+        // 统一返回解析
+        if(jsonRes.code === 1){
+            let url = jsonRes.data;
+            avaUrl.value = url;
+            tip.innerText = '✅ 头像上传成功';
+            tip.style.color = '#16a34a';
+            // 预览赋值、显示
+            previewImg.src = url;
+            previewImg.style.display = 'block';
+        }else{
+            tip.innerText = '❌ ' + jsonRes.msg;
+            tip.style.color = '#ef4444';
+        }
     }
 
-    //删除
+    // 删除接口 适配Result
     async function del(id){
         if(!confirm("确定删除？")) return;
         let res = await fetch("/setting/soulmate/del/"+id,{method:'POST'});
-        if(res.ok) location.reload();
+        let jsonRes = await res.json();
+        if(jsonRes.code === 1){
+            alert(jsonRes.msg);
+            location.reload(); // 删除成功刷新页面
+        }else{
+            alert("操作失败：" + jsonRes.msg);
+        }
     }
 
-    // 表单非空校验
-    createForm.onsubmit = function(e){
-        const gfName = this.querySelector('input[name="gfName"]').value.trim();
-        const characterTag = this.querySelector('input[name="characterTag"]').value.trim();
-        const detailPrompt = this.querySelector('textarea[name="detailPrompt"]').value.trim();
+    // 新增：创建表单异步提交方法
+    async function submitCreate(){
+        // 1. 表单非空校验
+        const gfName = createForm.querySelector('input[name="gfName"]').value.trim();
+        const characterTag = createForm.querySelector('input[name="characterTag"]').value.trim();
+        const detailPrompt = createForm.querySelector('textarea[name="detailPrompt"]').value.trim();
+        const avatarUrl = avaUrl.value;
 
         if(!gfName){
-            e.preventDefault();
             alert('请输入伴侣名称');
-            this.querySelector('input[name="gfName"]').focus();
-            return false;
+            createForm.querySelector('input[name="gfName"]').focus();
+            return;
         }
         if(!characterTag){
-            e.preventDefault();
             alert('请输入性格标签');
-            this.querySelector('input[name="characterTag"]').focus();
-            return false;
+            createForm.querySelector('input[name="characterTag"]').focus();
+            return;
         }
         if(!detailPrompt){
-            e.preventDefault();
             alert('请填写角色人设');
-            this.querySelector('textarea[name="detailPrompt"]').focus();
-            return false;
+            createForm.querySelector('textarea[name="detailPrompt"]').focus();
+            return;
         }
-        return true;
+
+        // 2. 组装表单参数
+        const formData = new FormData();
+        formData.append("gfName", gfName);
+        formData.append("characterTag", characterTag);
+        formData.append("detailPrompt", detailPrompt);
+        formData.append("avatarUrl", avatarUrl);
+
+        // 3. fetch异步提交创建接口
+        const res = await fetch("/setting/soulmate/add", {
+            method: "POST",
+            body: formData
+        });
+        const jsonRes = await res.json();
+        if(jsonRes.code === 1){
+            // 移除alert成功提示，直接关闭弹窗+刷新页面
+            closeDialog();
+            location.reload();
+        }else{
+            alert("创建失败：" + jsonRes.msg);
+        }
     }
 </script>
 </body>

@@ -1,5 +1,6 @@
 package com.wj.aisoulmatechat.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.wj.aisoulmatechat.config.properties.BasePromptConfigProperties;
@@ -12,6 +13,7 @@ import com.wj.aisoulmatechat.service.SoulmateService;
 import com.wj.aisoulmatechat.util.AgeCulUtil;
 import com.wj.aisoulmatechat.util.IkKeywordUtil;
 import com.wj.aisoulmatechat.util.RedisCacheUtil;
+import com.wj.aisoulmatechat.util.SecurityUserUtil;
 import com.wj.aisoulmatechat.vo.SoulmateVo;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
@@ -96,11 +98,30 @@ public class SoulmateServiceImpl extends ServiceImpl<UserSoulmateMapper, UserSou
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteById(Long soulmateId) {
-        //1、删除头像附表
+    public boolean deleteById(Long soulmateId) {
+        // 鉴权
+        Long userId = SecurityUserUtil.getCurrentUserId();
+        UserSoulmateEntity userSoulmate = this.lambdaQuery()
+                .eq(UserSoulmateEntity::getId, soulmateId)
+                .list()
+                .stream()
+                .findFirst()
+                .orElse(null);
+
+        // 数据不存在视为删除成功
+        if (userSoulmate == null) {
+            return true;
+        }
+
+        //数据存在,但不属于当前登录用户,越权
+        if (!userId.equals(userSoulmate.getUserId())) {
+            return false;
+        }
+
+        // 数据存在且是本人数据
         avMapper.deleteBySoulmateId(soulmateId);
-        //2、删除主表伴侣
         smMapper.deleteById(soulmateId);
+        return true;
     }
 
     @Override

@@ -264,7 +264,6 @@
         sex: soulmateInitData?.sex || "女"
     };
 
-    // dom
     const openSetBtn = document.getElementById("openSetBtn");
     const closeModal = document.getElementById("closeModal");
     const setModal = document.getElementById("setModal");
@@ -296,7 +295,6 @@
     const closeNoteModal = document.getElementById("closeNoteModal");
     const noteList = document.getElementById("noteList");
 
-    // ====================== 备忘录后端API 核心方法 ======================
     /**
      * 加载当前伴侣全部备忘录（调用GET /memo/list/{soulmateId}）
      */
@@ -315,7 +313,8 @@
                 }
             });
             if (!res.ok) throw new Error("接口请求失败");
-            const list = await res.json();
+            const jsonRes = await res.json();
+            const list = jsonRes.code === 1 ? jsonRes.data : [];
             renderNoteList(list);
             return list;
         } catch (err) {
@@ -336,7 +335,6 @@
         }
         let html = "";
         list.forEach(item => {
-            // 格式化时间
             const createTime = item.createTime ? new Date(item.createTime).toLocaleString() : "";
             html += `
                 <div class="flex items-start justify-between py-2 border-b border-loveLight/30">
@@ -352,7 +350,7 @@
         });
         noteList.innerHTML = html;
 
-        // 绑定删除按钮事件
+        // 删除按钮
         document.querySelectorAll(".del-note-btn").forEach(btn => {
             btn.onclick = async function () {
                 const docId = this.dataset.docId;
@@ -362,8 +360,8 @@
                     const delRes = await fetch(`/memo/delete/${docId}`, {
                         method: "POST"
                     });
-                    const delResult = await delRes.json();
-                    if (delResult === true) {
+                    const jsonDel = await delRes.json();
+                    if (jsonDel.code === 1 && jsonDel.data === true) {
                         alert("删除成功");
                         loadMemoList(); // 刷新列表
                     } else {
@@ -404,10 +402,10 @@
                     soulmateId: soulmateId
                 })
             });
-            const docId = await res.text();
-            if (docId) {
+            const jsonAdd = await res.json();
+            if (jsonAdd.code === 1 && jsonAdd.data) {
                 alert("备忘录保存成功！");
-                noteContent.value = ""; // 清空输入框
+                noteContent.value = "";
                 loadMemoList(); // 刷新弹窗列表
             } else {
                 alert("保存失败，请重试");
@@ -418,7 +416,6 @@
         }
     }
 
-    // ====================== 备忘录页面事件绑定 ======================
     // 保存按钮点击
     saveNoteBtn.onclick = saveNewMemo;
 
@@ -434,11 +431,11 @@
         noteModal.classList.add("hidden");
     };
 
-    // ====================== 原有初始化、其他逻辑无改动 ======================
     async function loadFirstHello() {
         try {
             let res = await fetch("/chat/get-first-msg?soulmateId=" + girlConfig.soulmateId);
-            let helloText = await res.text();
+            let jsonData = await res.json();
+            let helloText = jsonData.code === 1 ? jsonData.data : "哈喽~终于来找我聊天啦，今天过得怎么样呀？";
             document.getElementById("firstMsg").innerText = helloText;
         } catch (err) {
             document.getElementById("firstMsg").innerText = "哈喽~终于来找我聊天啦，今天过得怎么样呀？";
@@ -460,31 +457,30 @@
     };
     closeModal.onclick = ()=> setModal.classList.add("hidden");
 
-    //========= 选中文件立刻预览+自动上传（核心修复）=========
     avatarUpload.onchange = async function(){
         const file = this.files[0];
         if(!file) return;
-        //1.本地预览（瞬间出现，不用等后端）
+        //本地预览（瞬间出现，不用等后端）
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = e=>{
             previewImg.src = e.target.result;
             previewImg.classList.remove("hidden");
         }
-        //2.异步上传后端拿到线上url
+
         let fd = new FormData();
         fd.append("file",file);
         let res = await fetch("/avatar/soulmate/upload",{method:"POST",body:fd});
-        let url = await res.text();
-        tempUploadUrl = url;
+        let jsonUpload = await res.json();
+        tempUploadUrl = jsonUpload.code === 1 ? jsonUpload.data : "";
         //左侧头像同步刷新
-        girlAvatar.src = url;
-        chatAvatarLeft.src = url;
+        girlAvatar.src = tempUploadUrl;
+        chatAvatarLeft.src = tempUploadUrl;
     }
 
     //保存按钮 —— 【添加必填校验】
     saveSet.onclick = async () => {
-        // ========== 新增：必填项校验 ==========
+
         const nameVal = nameInput.value.trim();
         const personVal = personInput.value.trim();
         const remarkVal = remarkInput.value.trim();
@@ -504,7 +500,6 @@
             remarkInput.focus();
             return;
         }
-        // ====================================
 
         if(tempUploadUrl) girlConfig.avatar = tempUploadUrl;
         let selectSex = document.querySelector('input[name="sexRadio"]:checked')?.value || "女";
@@ -535,11 +530,9 @@
         previewImg.src = "";
         setModal.classList.add("hidden");
 
-        // ========== 关键修复代码开始 ==========
         // 保存配置后，立即同步聊天区头像 + 左侧信息卡片头像
         girlAvatar.src = girlConfig.avatar;
         chatAvatarLeft.src = girlConfig.avatar;
-        // ========== 关键修复代码结束 ==========
 
         initConfig();
     };
@@ -571,7 +564,7 @@
         return age;
     }
 
-    //聊天发送【修改后：打字机逐字输出，剔除data:前缀】
+    //聊天发送
     async function sendChat(){
         const content = userInput.value.trim();
         if(!content) return;
@@ -603,23 +596,22 @@
         let typeQueue = [];
         let typingLock = false;
 
-        // 打字机渲染函数：逐个字符输出
+        // 逐个字符输出
         async function typeWriter(){
             if(typingLock || typeQueue.length ===0) return;
             typingLock = true;
             const char = typeQueue.shift();
             tempText.innerText += char;
             chatContent.scrollTop = chatContent.scrollHeight;
-            await sleep(35); //打字速度，数值越大越慢，30~50最佳
+            await sleep(35); //打字速度，数值越大越慢
             typingLock = false;
             typeWriter();
         }
-        //简易延时工具
+        //延时工具
         function sleep(ms){
             return new Promise(res=>setTimeout(res,ms))
         }
 
-        //请求SSE接口
         const resp = await fetch("/chat/ai-chat-stream",{
             method:"POST",
             headers:{
@@ -635,7 +627,6 @@
             const {done,value} = await reader.read();
             if(done) break;
             let chunk = decoder.decode(value);
-            //【关键1：剔除SSE返回的data:前缀+换行】
             chunk = chunk.replaceAll("data:","").replaceAll("\n","");
             fullAiText += chunk;
             //新字符推入打字队列
@@ -661,9 +652,9 @@
         chatRecordModal.classList.replace("hidden", "flex");
         chatRecordWrap.innerHTML = `<div class="text-center text-gray-400 py-10">加载中...</div>`;
         try {
-            // girlConfig.soulmateId 为 Long 伴侣ID，传给后端接口
             const res = await fetch(`/chat/memory/group_by_day?soulmateId=${girlConfig.soulmateId}`);
-            const groupData = await res.json();
+            const jsonGroup = await res.json();
+            const groupData = jsonGroup.code === 1 ? jsonGroup.data : [];
             renderChatRecordGroup(groupData);
         } catch (err) {
             chatRecordWrap.innerHTML = `<div class="text-center text-red-400 py-10">加载记录失败，请稍后重试</div>`;

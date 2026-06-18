@@ -1,5 +1,6 @@
 package com.wj.aisoulmatechat.controller;
 
+import com.wj.aisoulmatechat.common.result.Result;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.transaction.annotation.Propagation;
@@ -19,15 +20,17 @@ public class RedisTestController {
 
     @GetMapping("/redis/test")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public String testRedis(){
+    public Result<String> testRedis(){
         redisTemplate.opsForValue().set("test:demo","自定义Template数据");
-        return redisTemplate.opsForValue().get("test:demo")+"";
+        String val = redisTemplate.opsForValue().get("test:demo")+"";
+        return Result.ok(val);
     }
 
     @GetMapping("/redis/str")
-    public String testStr(){
+    public Result<String> testStr(){
         stringRedisTemplate.opsForValue().set("test:str","原生字符串");
-        return stringRedisTemplate.opsForValue().get("test:str");
+        String val = stringRedisTemplate.opsForValue().get("test:str");
+        return Result.ok(val);
     }
 
 }

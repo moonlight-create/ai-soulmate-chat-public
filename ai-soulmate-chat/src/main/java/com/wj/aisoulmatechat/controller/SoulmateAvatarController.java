@@ -1,5 +1,6 @@
 package com.wj.aisoulmatechat.controller;
 
+import com.wj.aisoulmatechat.common.result.Result;
 import com.wj.aisoulmatechat.config.properties.MyServerConfigProperties;
 import com.wj.aisoulmatechat.service.SoulmateAvatarService;
 import lombok.RequiredArgsConstructor;
@@ -27,9 +28,10 @@ public class SoulmateAvatarController {
 
     //查询头像链接
     @GetMapping("/get")
-    public String getAvatar() {
+    public Result<String> getAvatar() {
         String url = soulmateAvatarService.getSoumateAvatar(DEFAULT_USER_ID);
-        return StringUtil.isEmpty(url) ? DEFAULT_AVATAR : url;
+        String res = StringUtil.isEmpty(url) ? DEFAULT_AVATAR : url;
+        return Result.ok(res);
     }
 
     /**
@@ -37,7 +39,7 @@ public class SoulmateAvatarController {
      */
     @SneakyThrows
     @PostMapping("/uploadAndSave")
-    public String uploadAndSave(@RequestParam("file") MultipartFile file) {
+    public Result<String> uploadAndSave(@RequestParam("file") MultipartFile file) {
         File dir = new File(DIR);
         if (!dir.exists()) dir.mkdirs();
 
@@ -50,7 +52,7 @@ public class SoulmateAvatarController {
 
         soulmateAvatarService.saveOrUpdateAvatar(DEFAULT_USER_ID, avatarUrl);
 
-        return avatarUrl;
+        return Result.ok(avatarUrl);
     }
 
     /**
@@ -58,7 +60,7 @@ public class SoulmateAvatarController {
      */
     @SneakyThrows
     @PostMapping("/upload")
-    public String upload(@RequestParam("file") MultipartFile file) {
+    public Result<String> upload(@RequestParam("file") MultipartFile file) {
         File dir = new File(DIR);
         if (!dir.exists()) dir.mkdirs();
 
@@ -67,7 +69,8 @@ public class SoulmateAvatarController {
         file.transferTo(dest);
 
 //        return myConfigProperties.getIp() + "/avatar/soulmate/file/" + fileName;
-        return "/avatar/soulmate/file/" + fileName;
+        String res = "/avatar/soulmate/file/" + fileName;
+        return Result.ok(res);
     }
 
     public static void main(String[] args) {

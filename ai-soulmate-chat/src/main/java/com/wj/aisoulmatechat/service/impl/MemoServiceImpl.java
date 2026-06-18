@@ -6,6 +6,7 @@ import com.wj.aisoulmatechat.mapper.MemoMapper;
 import com.wj.aisoulmatechat.security.LoginUser;
 import com.wj.aisoulmatechat.service.MemoService;
 import com.wj.aisoulmatechat.util.IkKeywordUtil;
+import com.wj.aisoulmatechat.util.SecurityUserUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -27,8 +28,9 @@ public class MemoServiceImpl extends ServiceImpl<MemoMapper,MemoEntity> implemen
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String addMemo(MemoEntity memo) {
-        LoginUser loginUser = getCurrentLoginUser();
-        Long userId = loginUser.getUser().getId();
+//        LoginUser loginUser = getCurrentLoginUser();
+//        Long userId = loginUser.getUser().getId();
+        Long userId = SecurityUserUtil.getCurrentUserId();
         memo.setUserId(userId);
         Long soulmateId = memo.getSoulmateId();
         String content = memo.getContent();
@@ -62,8 +64,9 @@ public class MemoServiceImpl extends ServiceImpl<MemoMapper,MemoEntity> implemen
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteByDocId(String docId) {
-        LoginUser loginUser = getCurrentLoginUser();
-        Long userId = loginUser.getUser().getId();
+//        LoginUser loginUser = getCurrentLoginUser();
+//        Long userId = loginUser.getUser().getId();
+        Long userId = SecurityUserUtil.getCurrentUserId();
         vectorStore.delete(List.of(docId));
         return lambdaUpdate()
                 .eq(MemoEntity::getDocId, docId)
@@ -73,8 +76,9 @@ public class MemoServiceImpl extends ServiceImpl<MemoMapper,MemoEntity> implemen
 
     @Override
     public List<MemoEntity> listByUserSoulmateId(Long soulmateId) {
-        LoginUser loginUser = getCurrentLoginUser();
-        Long userId = loginUser.getUser().getId();
+//        LoginUser loginUser = getCurrentLoginUser();
+//        Long userId = loginUser.getUser().getId();
+        Long userId = SecurityUserUtil.getCurrentUserId();
         return this.lambdaQuery().eq(MemoEntity::getSoulmateId, soulmateId)
                 .eq(MemoEntity::getUserId, userId)
                 .orderByDesc(MemoEntity::getCreateTime)
@@ -82,13 +86,13 @@ public class MemoServiceImpl extends ServiceImpl<MemoMapper,MemoEntity> implemen
     }
 
     //获取当前登录用户
-    private LoginUser getCurrentLoginUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || authentication.getPrincipal() instanceof String) {
-            throw new SecurityException("用户未登录，请重新登录");
-        }
-        return (LoginUser) authentication.getPrincipal();
-    }
+//    private LoginUser getCurrentLoginUser() {
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        if (authentication == null || authentication.getPrincipal() instanceof String) {
+//            throw new SecurityException("用户未登录，请重新登录");
+//        }
+//        return (LoginUser) authentication.getPrincipal();
+//    }
 
 
 }
