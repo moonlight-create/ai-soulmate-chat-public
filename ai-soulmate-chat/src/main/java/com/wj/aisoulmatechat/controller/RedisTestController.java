@@ -19,7 +19,6 @@ public class RedisTestController {
     private StringRedisTemplate stringRedisTemplate;
 
     @GetMapping("/redis/test")
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Result<String> testRedis(){
         redisTemplate.opsForValue().set("test:demo","自定义Template数据");
         String val = redisTemplate.opsForValue().get("test:demo")+"";

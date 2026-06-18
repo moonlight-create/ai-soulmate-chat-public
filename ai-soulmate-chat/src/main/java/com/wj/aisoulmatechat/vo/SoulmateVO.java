@@ -3,7 +3,7 @@ package com.wj.aisoulmatechat.vo;
 import lombok.Data;
 
 @Data
-public class SoulmateVo {
+public class SoulmateVO {
     private Long soulmateId;
     private String gfName;
     private String characterTag;

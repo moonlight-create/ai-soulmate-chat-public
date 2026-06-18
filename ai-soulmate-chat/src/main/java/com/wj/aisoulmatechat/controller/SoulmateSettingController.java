@@ -1,17 +1,21 @@
 package com.wj.aisoulmatechat.controller;
 
 import com.wj.aisoulmatechat.common.result.Result;
+import com.wj.aisoulmatechat.dto.UserSoulmateDTO;
 import com.wj.aisoulmatechat.entity.SoulmateAvatarEntity;
-import com.wj.aisoulmatechat.entity.UserSoulmateEntity;
 import com.wj.aisoulmatechat.service.SoulmateService;
 import com.wj.aisoulmatechat.util.SecurityUserUtil;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import opennlp.tools.util.StringUtil;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/setting/soulmate")
+@Validated
 public class SoulmateSettingController {
     private final SoulmateService soulmateService;
     //默认头像
@@ -19,8 +23,10 @@ public class SoulmateSettingController {
 
     // 新增伴侣提交
     @PostMapping("/add")
-    public Result<String> add(UserSoulmateEntity soul,
-                              @RequestParam("avatarUrl") String avatarUrl){
+    public Result<String> add(
+        @Valid UserSoulmateDTO soul,
+        @RequestParam("avatarUrl") String avatarUrl
+    ){
         Long userId = SecurityUserUtil.getCurrentUserId();
         soul.setUserId(userId);
         //填充默认字段
@@ -31,9 +37,10 @@ public class SoulmateSettingController {
 
     // 修改伴侣提交
     @PostMapping("/update")
-    public Result<String> update(UserSoulmateEntity soul,
-                                 @RequestParam("avatarId") Long avatarId,
-                                 @RequestParam("avatarUrl") String avatarUrl){
+    public Result<String> update(UserSoulmateDTO soul,
+                                 @NotNull(message = "头像ID不能为空") @RequestParam("avatarId") Long avatarId,
+                                 @NotNull(message = "头像链接不能为空") @RequestParam("avatarUrl") String avatarUrl
+    ){
         Long userId = SecurityUserUtil.getCurrentUserId();
         soul.setUserId(userId);
         SoulmateAvatarEntity soulmateAvatarEntity = new SoulmateAvatarEntity();
@@ -45,7 +52,9 @@ public class SoulmateSettingController {
 
     // 根据id删除伴侣 + 头像
     @PostMapping("/del/{soulmateId}")
-    public Result<Boolean> delete(@PathVariable("soulmateId") Long soulmateId){
+    public Result<Boolean> delete(
+        @NotNull(message = "伴侣ID不能为空") @PathVariable("soulmateId") Long soulmateId
+    ){
         // 增加鉴权，防止越权删除
         boolean success = soulmateService.deleteById(soulmateId);
         if(success){

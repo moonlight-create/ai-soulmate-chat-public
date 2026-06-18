@@ -2,6 +2,7 @@ package com.wj.aisoulmatechat.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.wj.aisoulmatechat.entity.ChatMemoryEntity;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -24,5 +25,14 @@ public interface ChatMemoryMapper extends BaseMapper<ChatMemoryEntity> {
 
     @Select("SELECT t.* FROM ai_soulmate_chat_memory t WHERE conversation_id = #{conversationId} ORDER BY create_time ASC")
     List<ChatMemoryEntity> listAllByConversation(@Param("conversationId") String conversationId);
+
+
+    /**
+     * 根据soulmateId删除该伴侣全部聊天记录
+     * @param convId 会话ID
+     * @return 删除影响行数
+     */
+    @Delete("delete from ai_soulmate_chat_memory where conversation_id = #{convId}")
+    int deleteByConversationId(@Param("convId") String convId);
 
 }

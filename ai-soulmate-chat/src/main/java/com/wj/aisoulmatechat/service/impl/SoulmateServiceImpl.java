@@ -1,12 +1,17 @@
 package com.wj.aisoulmatechat.service.impl;
 
-import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.wj.aisoulmatechat.common.util.ConversationUtil;
 import com.wj.aisoulmatechat.config.properties.BasePromptConfigProperties;
 import com.wj.aisoulmatechat.config.properties.MyChatMemoryConfigProperties;
+import com.wj.aisoulmatechat.dto.UserSoulmateDTO;
 import com.wj.aisoulmatechat.entity.SoulmateAvatarEntity;
 import com.wj.aisoulmatechat.entity.UserSoulmateEntity;
+import com.wj.aisoulmatechat.mapper.ChatMemoryMapper;
+import com.wj.aisoulmatechat.mapper.MemoMapper;
 import com.wj.aisoulmatechat.mapper.SoulmateAvatarMapper;
 import com.wj.aisoulmatechat.mapper.UserSoulmateMapper;
 import com.wj.aisoulmatechat.service.SoulmateService;
@@ -14,8 +19,9 @@ import com.wj.aisoulmatechat.util.AgeCulUtil;
 import com.wj.aisoulmatechat.util.IkKeywordUtil;
 import com.wj.aisoulmatechat.util.RedisCacheUtil;
 import com.wj.aisoulmatechat.util.SecurityUserUtil;
-import com.wj.aisoulmatechat.vo.SoulmateVo;
+import com.wj.aisoulmatechat.vo.SoulmateVO;
 import jakarta.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.Message;
@@ -26,6 +32,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,11 +44,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@RequiredArgsConstructor
 public class SoulmateServiceImpl extends ServiceImpl<UserSoulmateMapper, UserSoulmateEntity> implements SoulmateService {
     private static final Logger log = LoggerFactory.getLogger(SoulmateServiceImpl.class);
 
     private final UserSoulmateMapper smMapper;
     private final SoulmateAvatarMapper avMapper;
+    private final MemoMapper memoMapper;
+    private final ChatMemoryMapper cmMapper;
     private final MyChatMemoryConfigProperties myChatMemoryConfigProperties;
     private final BasePromptConfigProperties basePromptConfigProperties;
     private final VectorStore vectorStore;
@@ -68,31 +78,25 @@ public class SoulmateServiceImpl extends ServiceImpl<UserSoulmateMapper, UserSou
     @Resource
     private RedisCacheUtil redisCacheUtil;
 
-    public SoulmateServiceImpl(UserSoulmateMapper smMapper, SoulmateAvatarMapper avMapper, MyChatMemoryConfigProperties myChatMemoryConfigProperties, VectorStore vectorStore,BasePromptConfigProperties basePromptConfigProperties) {
-        this.smMapper = smMapper;
-        this.avMapper = avMapper;
-        this.myChatMemoryConfigProperties = myChatMemoryConfigProperties;
-        this.basePromptConfigProperties = basePromptConfigProperties;
-        this.vectorStore = vectorStore;
-    }
-
     @Override
-    public List<SoulmateVo> getList(Long userId) {
+    public List<SoulmateVO> getList(Long userId) {
         return smMapper.listByUid(userId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void saveSoulmate(UserSoulmateEntity soul, String avatarUrl) {
-        save(soul);
+    public void saveSoulmate(UserSoulmateDTO soul, String avatarUrl) {
+        UserSoulmateEntity userSoulmate = new UserSoulmateEntity();
+        BeanUtil.copyProperties(soul,userSoulmate, CopyOptions.create().ignoreNullValue());
+        save(userSoulmate);
         SoulmateAvatarEntity av=new SoulmateAvatarEntity();
-        av.setSoulmateId(soul.getId());
+        av.setSoulmateId(userSoulmate.getId());
         av.setAvatarUrl(avatarUrl);
         avMapper.insert(av);
     }
 
     @Override
-    public SoulmateVo getById(Long sid) {
+    public SoulmateVO getById(Long sid) {
         return smMapper.getOneVoById(sid);
     }
 
@@ -118,24 +122,52 @@ public class SoulmateServiceImpl extends ServiceImpl<UserSoulmateMapper, UserSou
             return false;
         }
 
+        String convId = ConversationUtil.buildSoulmateConvId(userId, soulmateId);
+
+        try {
+            //删除备忘录-向量数据库
+            deleteVectorMemoByConversationId(convId);
+        } catch (Exception e) {
+            throw new RuntimeException("备忘录-向量数据库删除失败，操作回滚", e);
+        }
+
         // 数据存在且是本人数据
         avMapper.deleteBySoulmateId(soulmateId);
         smMapper.deleteById(soulmateId);
+
+        //删除备忘录-关系数据库
+        memoMapper.deleteBySoulmateId(soulmateId);
+        //删除聊天记录
+        cmMapper.deleteByConversationId(convId);
+
         return true;
+    }
+
+    /**
+     * 删除指定会话的向量数据
+     * @param convId
+     */
+    private void deleteVectorMemoByConversationId(String convId) {
+        FilterExpressionBuilder builder = new FilterExpressionBuilder();
+        var expr = builder.eq("conversationId", convId).build();
+        vectorStore.delete(expr);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateById(UserSoulmateEntity userSoulmateEntity, SoulmateAvatarEntity soulmateAvatarEntity) {
+    public void updateById(UserSoulmateDTO userSoulmateDTO, SoulmateAvatarEntity soulmateAvatarEntity) {
         //1、删除缓存数据
-        this.clearCache(userSoulmateEntity.getUserId(), userSoulmateEntity.getId());
+        this.clearCache(userSoulmateDTO.getUserId(), userSoulmateDTO.getId());
         //2、更新主表 user_soulmate
-        smMapper.updateById(userSoulmateEntity);
+        UserSoulmateEntity userSoulmate = new UserSoulmateEntity();
+        BeanUtil.copyProperties(userSoulmateDTO,userSoulmate, CopyOptions.create().ignoreNullValue());
+
+        smMapper.updateById(userSoulmate);
         //3、更新头像附表 soulmate_avatar
         avMapper.updateById(soulmateAvatarEntity);
         //4、延时再次删除
         DELAY_EXECUTOR.schedule(
-                () -> clearCache(userSoulmateEntity.getUserId(), userSoulmateEntity.getId()),
+                () -> clearCache(userSoulmateDTO.getUserId(), userSoulmateDTO.getId()),
                 3, TimeUnit.SECONDS
         );
     }
@@ -153,7 +185,7 @@ public class SoulmateServiceImpl extends ServiceImpl<UserSoulmateMapper, UserSou
 
         //缓存为空，查库
         if (extraPrompt == null) {
-            SoulmateVo entity = smMapper.getPersonalityByUidAndSoulmateId(userId, soulmateId);
+            SoulmateVO entity = smMapper.getPersonalityByUidAndSoulmateId(userId, soulmateId);
             String birth = Optional.ofNullable(entity.getBirth()).orElse("未设置");
             int age = 18;
             if(!"未设置".equals(birth)){

@@ -1,14 +1,13 @@
 package com.wj.aisoulmatechat.controller;
 
-import com.wj.aisoulmatechat.security.LoginUser;
 import com.wj.aisoulmatechat.service.SoulmateAvatarService;
 import com.wj.aisoulmatechat.service.SoulmateService;
 import com.wj.aisoulmatechat.util.AgeCulUtil;
-import com.wj.aisoulmatechat.vo.SoulmateAvatarVo;
-import com.wj.aisoulmatechat.vo.SoulmateVo;
+import com.wj.aisoulmatechat.util.SecurityUserUtil;
+import com.wj.aisoulmatechat.vo.SoulmateAvatarVO;
+import com.wj.aisoulmatechat.vo.SoulmateVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,7 +38,7 @@ public class PageController {
     // 跳转聊天房间页面，携带soulmateId
     @GetMapping("/toChat")
     public String toChat(@RequestParam("sid") Long sid, Model model){
-        SoulmateVo soulmateVo = soulmateService.getById(sid);
+        SoulmateVO soulmateVo = soulmateService.getById(sid);
 
         String birth = soulmateVo.getBirth();
         birth = Optional.ofNullable(birth).orElse("未设置");
@@ -50,10 +49,10 @@ public class PageController {
         }
         soulmateVo.setAge(age);
 
-        SoulmateAvatarVo soulmateAvatarVo =  soulmateAvatarService.getBySoulmateId(sid);
+        SoulmateAvatarVO soulmateAvatarVo =  soulmateAvatarService.getBySoulmateId(sid);
 
         soulmateAvatarVo = Optional.ofNullable(soulmateAvatarVo)
-                .orElse(new SoulmateAvatarVo());
+                .orElse(new SoulmateAvatarVO());
 
         model.addAttribute("soulmate_info",soulmateVo);
         model.addAttribute("soulmate_avatar_info",soulmateAvatarVo);
@@ -63,10 +62,9 @@ public class PageController {
 
     // 跳转伴侣选择首页
     @GetMapping({"/","select_soulmate"})
-    public String index(Authentication auth, Model model){
-        LoginUser loginUser = (LoginUser) auth.getPrincipal();
-        Long userId = loginUser.getUser().getId();
-        List<SoulmateVo> list = soulmateService.getList(userId);
+    public String index(Model model){
+        Long userId = SecurityUserUtil.getCurrentUserId();
+        List<SoulmateVO> list = soulmateService.getList(userId);
         model.addAttribute("list",list);
         return "select_soulmate";
     }

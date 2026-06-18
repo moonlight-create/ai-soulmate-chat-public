@@ -209,7 +209,6 @@
         let res = await fetch("/setting/soulmate/del/"+id,{method:'POST'});
         let jsonRes = await res.json();
         if(jsonRes.code === 1){
-            alert(jsonRes.msg);
             location.reload(); // 删除成功刷新页面
         }else{
             alert("操作失败：" + jsonRes.msg);
