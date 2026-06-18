@@ -2,16 +2,16 @@ package com.wj.aisoulmatechat.mapper;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.wj.aisoulmatechat.entity.SoulmateAvatar;
+import com.wj.aisoulmatechat.entity.SoulmateAvatarEntity;
 import com.wj.aisoulmatechat.vo.SoulmateAvatarVo;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
-public interface SoulmateAvatarMapper extends BaseMapper<SoulmateAvatar> {
+public interface SoulmateAvatarMapper extends BaseMapper<SoulmateAvatarEntity> {
     //根据伴侣id删除头像记录
     default int deleteBySoulmateId(Long soulmateId){
-        LambdaQueryWrapper<SoulmateAvatar> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(SoulmateAvatar::getSoulmateId, soulmateId);
+        LambdaQueryWrapper<SoulmateAvatarEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SoulmateAvatarEntity::getSoulmateId, soulmateId);
         return delete(wrapper);
     }
 

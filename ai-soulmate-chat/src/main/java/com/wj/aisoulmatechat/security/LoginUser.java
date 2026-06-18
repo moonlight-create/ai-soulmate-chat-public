@@ -1,5 +1,5 @@
 package com.wj.aisoulmatechat.security;
-import com.wj.aisoulmatechat.entity.AppUser;
+import com.wj.aisoulmatechat.entity.AppUserEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -8,9 +8,11 @@ import java.util.Collections;
 
 @RequiredArgsConstructor
 public class LoginUser implements UserDetails {
-    private final AppUser user;
+    private static final long serialVersionUID = 1L;
 
-    public AppUser getUser(){
+    private final AppUserEntity user;
+
+    public AppUserEntity getUser(){
         return user;
     }
 

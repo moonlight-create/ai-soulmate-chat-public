@@ -36,7 +36,7 @@ public class RagConfig {
                 .build();
     }
 
-    @Bean
+//    @Bean
     public QuestionAnswerAdvisor qaAdvisor(VectorStore vectorStore) {
         SearchRequest sr = SearchRequest.builder().topK(4).similarityThreshold(0.1d).build();
         PromptTemplate pt = PromptTemplate.builder()

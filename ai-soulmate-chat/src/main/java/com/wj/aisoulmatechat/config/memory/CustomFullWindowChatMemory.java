@@ -1,15 +1,13 @@
 package com.wj.aisoulmatechat.config.memory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wj.aisoulmatechat.config.mq.RabbitMqConfig;
-import com.wj.aisoulmatechat.entity.ChatMemoryIncrementMsg;
+import com.wj.aisoulmatechat.entity.mq.ChatMemoryIncrementMsg;
 import com.wj.aisoulmatechat.util.RedisCacheUtil;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;

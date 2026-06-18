@@ -249,7 +249,6 @@
     const soulmateInitData = /*[[${soulmate_info}]]*/{};
     const avatarInitData = /*[[${soulmate_avatar_info}]]*/{};
     const STORAGE_KEY = "girlFriendSet";
-    const NOTE_LIST_KEY = "note_list_data";
     let tempUploadUrl = ""; //临时存本次上传图片地址
 
     let girlConfig = {
@@ -296,34 +295,56 @@
     const noteModal = document.getElementById("noteModal");
     const closeNoteModal = document.getElementById("closeNoteModal");
     const noteList = document.getElementById("noteList");
-    const NOTE_KEY = "ai_soulmate_note";
 
-    // 初始化假数据 + 读取本地存储
-    function initNoteList() {
-        let list = JSON.parse(localStorage.getItem(NOTE_LIST_KEY)) || [];
-        // 首次使用写入模拟假数据
-        if (list.length === 0) {
-            list = [
-                { id: 1, content: "第一条备忘：记录日常聊天小细节", time: "2026-06-09 10:20" },
-                { id: 2, content: "第二条备忘：对方喜欢的话题和兴趣", time: "2026-06-09 11:15" },
-                { id: 3, content: "第三条备忘：重要提醒，记得及时互动", time: "2026-06-09 14:30" }
-            ];
-            localStorage.setItem(NOTE_LIST_KEY, JSON.stringify(list));
+    // ====================== 备忘录后端API 核心方法 ======================
+    /**
+     * 加载当前伴侣全部备忘录（调用GET /memo/list/{soulmateId}）
+     */
+    async function loadMemoList() {
+        const soulmateId = girlConfig.soulmateId;
+        if (!soulmateId) {
+            noteList.innerHTML = `<div class="text-center text-gray-400 py-10">未选择虚拟伴侣，无法加载备忘录</div>`;
+            return [];
         }
-        renderNoteList(list);
+        try {
+            noteList.innerHTML = `<div class="text-center text-gray-400 py-10">加载中...</div>`;
+            const res = await fetch(`/memo/list/${soulmateId}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+            if (!res.ok) throw new Error("接口请求失败");
+            const list = await res.json();
+            renderNoteList(list);
+            return list;
+        } catch (err) {
+            noteList.innerHTML = `<div class="text-center text-red-400 py-10">加载备忘录失败，请刷新重试</div>`;
+            console.error("加载备忘录异常：", err);
+            return [];
+        }
     }
 
-    // 渲染备忘录列表（标准橡皮图标+动漫长方形橡皮样式）
+    /**
+     * 渲染备忘录列表
+     * @param {Array} list 后端返回 MemoEntity 数组
+     */
     function renderNoteList(list) {
+        if (!list || list.length === 0) {
+            noteList.innerHTML = `<div class="text-center text-gray-400 py-10">暂无备忘录，快去创建吧</div>`;
+            return;
+        }
         let html = "";
         list.forEach(item => {
+            // 格式化时间
+            const createTime = item.createTime ? new Date(item.createTime).toLocaleString() : "";
             html += `
                 <div class="flex items-start justify-between py-2 border-b border-loveLight/30">
                     <div class="flex-1 pr-2">
-                        <div class="text-xs text-gray-400">${item.time}</div>
-                        <div class="text-sm text-gray-700 break-all">${item.content}</div>
+                        <div class="text-xs text-gray-400">${createTime}</div>
+                        <div class="text-sm text-gray-700 break-all whitespace-pre-wrap">${item.content}</div>
                     </div>
-                    <button class="del-note-btn eraser-btn ml-2" data-id="${item.id}">
+                    <button class="del-note-btn eraser-btn ml-2" data-doc-id="${item.docId}">
                         <i class="fa fa-eraser"></i>
                     </button>
                 </div>
@@ -331,131 +352,89 @@
         });
         noteList.innerHTML = html;
 
-        // 绑定删除事件
+        // 绑定删除按钮事件
         document.querySelectorAll(".del-note-btn").forEach(btn => {
-            btn.onclick = function () {
-                const delId = parseInt(this.dataset.id);
-                let dataList = JSON.parse(localStorage.getItem(NOTE_LIST_KEY)) || [];
-                dataList = dataList.filter(n => n.id !== delId);
-                localStorage.setItem(NOTE_LIST_KEY, JSON.stringify(dataList));
-                renderNoteList(dataList);
+            btn.onclick = async function () {
+                const docId = this.dataset.docId;
+                if (!confirm("确定删除这条备忘录？删除后无法恢复")) return;
+                try {
+                    // 调用删除接口 POST /memo/delete/{docId}
+                    const delRes = await fetch(`/memo/delete/${docId}`, {
+                        method: "POST"
+                    });
+                    const delResult = await delRes.json();
+                    if (delResult === true) {
+                        alert("删除成功");
+                        loadMemoList(); // 刷新列表
+                    } else {
+                        alert("删除失败");
+                    }
+                } catch (err) {
+                    alert("删除请求异常");
+                    console.error("删除备忘录异常：", err);
+                }
             }
         });
     }
 
     /**
-     * 渲染按天分组聊天记录
-     * @param {Array} groupList 后端返回 ChatMemoryGroupVO 数组
+     * 保存新建备忘录（调用POST /memo/add?soulmateId=xxx）
      */
-    function renderChatRecordGroup(groupList) {
-        if (!groupList || groupList.length === 0) {
-            chatRecordWrap.innerHTML = `<div class="text-center text-gray-400 py-10">暂无历史聊天记录</div>`;
+    async function saveNewMemo() {
+        const content = noteContent.value.trim();
+        const soulmateId = girlConfig.soulmateId;
+        if (!content) {
+            alert("备忘录内容不能为空！");
+            noteContent.focus();
             return;
         }
-        let html = "";
-        groupList.forEach(group => {
-            // 分组标题：今天 / 昨天 / 2026-06-15
-            html += `
-                <div class="group-block">
-                    <div class="text-center text-sm text-gray-500 mb-3 relative before:content-[''] before:absolute before:w-full before:h-[1px] before:bg-gray-200 before:left-0 before:top-1/2">
-                        <span class="bg-white px-3 relative z-10">${group.groupTitle}</span>
-                    </div>
-                    <div class="space-y-3 pl-2 pr-2">
-            `;
-            // 遍历当天消息
-            group.msgList.forEach(msg => {
-                // msgType 1 用户，2 AI伴侣
-                if (msg.msgType === 1) {
-                    // 用户消息 居右 粉色背景
-                    html += `
-                        <div class="flex gap-3 justify-end">
-                            <div class="bg-love px-4 py-3 rounded-xl rounded-tr-none text-white max-w-[75%]">
-                                <p class="whitespace-pre-wrap">${msg.content || ""}</p>
-                                <div class="text-xs opacity-70 mt-1 text-right">${msg.createTime}</div>
-                            </div>
-                            <div class="w-10 h-10 rounded-full bg-gray-400 shrink-0 flex items-center justify-center text-white">我</div>
-                        </div>
-                    `;
-                } else if (msg.msgType === 2) {
-                    // AI伴侣消息 居左 浅粉背景
-                    html += `
-                        <div class="flex gap-3">
-                            <img src="${girlConfig.avatar}" class="w-10 h-10 rounded-full object-cover shrink-0">
-                            <div class="bg-loveLight px-4 py-3 rounded-xl rounded-tl-none max-w-[75%]">
-                                <p class="whitespace-pre-wrap text-gray-700">${msg.content || ""}</p>
-                                <div class="text-xs text-gray-400 mt-1">${msg.createTime}</div>
-                            </div>
-                        </div>
-                    `;
-                }
+        if (!soulmateId) {
+            alert("请先保存虚拟伴侣配置！");
+            return;
+        }
+        try {
+            // 请求后端新增接口
+            const res = await fetch(`/memo/add`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    content: content,
+                    soulmateId: soulmateId
+                })
             });
-            html += `</div></div>`;
-        });
-        chatRecordWrap.innerHTML = html;
+            const docId = await res.text();
+            if (docId) {
+                alert("备忘录保存成功！");
+                noteContent.value = ""; // 清空输入框
+                loadMemoList(); // 刷新弹窗列表
+            } else {
+                alert("保存失败，请重试");
+            }
+        } catch (err) {
+            alert("保存备忘录请求异常");
+            console.error("新增备忘录异常：", err);
+        }
     }
 
-    //初始化页面
-    function initConfig(){
-        girlAvatar.src = girlConfig.avatar;
-        chatAvatarLeft.src = girlConfig.avatar;
-        nameInput.value = girlConfig.name;
-        birthInput.value = girlConfig.birth;
-        hobbyInput.value = girlConfig.hobby;
-        personInput.value = girlConfig.person;
-        remarkInput.value = girlConfig.remark;
-        document.querySelectorAll('input[name="sexRadio"]').forEach(item=>{
-            item.checked = item.value === girlConfig.sex;
-        })
-        document.getElementById("girlName").innerText = girlConfig.name;
-        document.getElementById("sexShow").innerText = girlConfig.sex;
-        document.getElementById("ageShow").innerText = girlConfig.age;
-        document.getElementById("hobbyShow").innerText = girlConfig.hobby;
-        document.getElementById("girlRemark").innerText = girlConfig.remark;
+    // ====================== 备忘录页面事件绑定 ======================
+    // 保存按钮点击
+    saveNoteBtn.onclick = saveNewMemo;
 
-        const previewImg = document.getElementById("previewImg");
-        if(girlConfig.avatar && girlConfig.avatar !== "/default.png"){
-            previewImg.src = girlConfig.avatar;
-            previewImg.classList.remove("hidden");
-        }else{
-            previewImg.classList.add("hidden");
-            previewImg.src = "";
-        }
-
-        // 加载本地缓存备忘录
-        noteContent.value = localStorage.getItem(NOTE_KEY) || "";
-        // 初始化备忘录列表
-        initNoteList();
-    }
-    initConfig();
-
-    // 备忘录保存：同时存入单行文本 + 追加到列表
-    saveNoteBtn.onclick = function () {
-        const val = noteContent.value.trim();
-        localStorage.setItem(NOTE_KEY, val);
-        if (val) {
-            let list = JSON.parse(localStorage.getItem(NOTE_LIST_KEY)) || [];
-            const now = new Date();
-            const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-            const newId = list.length > 0 ? Math.max(...list.map(i=>i.id)) + 1 : 1;
-            list.unshift({
-                id: newId,
-                content: val,
-                time: timeStr
-            });
-            localStorage.setItem(NOTE_LIST_KEY, JSON.stringify(list));
-            initNoteList();
-        }
-    };
-
-    // 打开浏览弹窗
-    viewNoteBtn.onclick = function () {
+    // 打开备忘录浏览弹窗
+    viewNoteBtn.onclick = async function () {
         noteModal.classList.replace("hidden", "flex");
+        // 弹窗打开时自动加载最新数据
+        await loadMemoList();
     };
-    // 关闭浏览弹窗
+
+    // 关闭备忘录弹窗
     closeNoteModal.onclick = function () {
         noteModal.classList.add("hidden");
     };
 
+    // ====================== 原有初始化、其他逻辑无改动 ======================
     async function loadFirstHello() {
         try {
             let res = await fetch("/chat/get-first-msg?soulmateId=" + girlConfig.soulmateId);
@@ -695,6 +674,89 @@
     closeChatRecordModal.onclick = function () {
         chatRecordModal.classList.add("hidden");
     };
+
+    /**
+     * 渲染按天分组聊天记录
+     * @param {Array} groupList 后端返回 ChatMemoryGroupVO 数组
+     */
+    function renderChatRecordGroup(groupList) {
+        if (!groupList || groupList.length === 0) {
+            chatRecordWrap.innerHTML = `<div class="text-center text-gray-400 py-10">暂无历史聊天记录</div>`;
+            return;
+        }
+        let html = "";
+        groupList.forEach(group => {
+            // 分组标题：今天 / 昨天 / 2026-06-15
+            html += `
+                <div class="group-block">
+                    <div class="text-center text-sm text-gray-500 mb-3 relative before:content-[''] before:absolute before:w-full before:h-[1px] before:bg-gray-200 before:left-0 before:top-1/2">
+                        <span class="bg-white px-3 relative z-10">${group.groupTitle}</span>
+                    </div>
+                    <div class="space-y-3 pl-2 pr-2">
+            `;
+            // 遍历当天消息
+            group.msgList.forEach(msg => {
+                // msgType 1 用户，2 AI伴侣
+                if (msg.msgType === 1) {
+                    // 用户消息 居右 粉色背景
+                    html += `
+                        <div class="flex gap-3 justify-end">
+                            <div class="bg-love px-4 py-3 rounded-xl rounded-tr-none text-white max-w-[75%]">
+                                <p class="whitespace-pre-wrap">${msg.content || ""}</p>
+                                <div class="text-xs opacity-70 mt-1 text-right">${msg.createTime}</div>
+                            </div>
+                            <div class="w-10 h-10 rounded-full bg-gray-400 shrink-0 flex items-center justify-center text-white">我</div>
+                        </div>
+                    `;
+                } else if (msg.msgType === 2) {
+                    // AI伴侣消息 居左 浅粉背景
+                    html += `
+                        <div class="flex gap-3">
+                            <img src="${girlConfig.avatar}" class="w-10 h-10 rounded-full object-cover shrink-0">
+                            <div class="bg-loveLight px-4 py-3 rounded-xl rounded-tl-none max-w-[75%]">
+                                <p class="whitespace-pre-wrap text-gray-700">${msg.content || ""}</p>
+                                <div class="text-xs text-gray-400 mt-1">${msg.createTime}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            html += `</div></div>`;
+        });
+        chatRecordWrap.innerHTML = html;
+    }
+
+    //初始化页面
+    function initConfig(){
+        girlAvatar.src = girlConfig.avatar;
+        chatAvatarLeft.src = girlConfig.avatar;
+        nameInput.value = girlConfig.name;
+        birthInput.value = girlConfig.birth;
+        hobbyInput.value = girlConfig.hobby;
+        personInput.value = girlConfig.person;
+        remarkInput.value = girlConfig.remark;
+        document.querySelectorAll('input[name="sexRadio"]').forEach(item=>{
+            item.checked = item.value === girlConfig.sex;
+        })
+        document.getElementById("girlName").innerText = girlConfig.name;
+        document.getElementById("sexShow").innerText = girlConfig.sex;
+        document.getElementById("ageShow").innerText = girlConfig.age;
+        document.getElementById("hobbyShow").innerText = girlConfig.hobby;
+        document.getElementById("girlRemark").innerText = girlConfig.remark;
+
+        const previewImg = document.getElementById("previewImg");
+        if(girlConfig.avatar && girlConfig.avatar !== "/default.png"){
+            previewImg.src = girlConfig.avatar;
+            previewImg.classList.remove("hidden");
+        }else{
+            previewImg.classList.add("hidden");
+            previewImg.src = "";
+        }
+
+        // 清空本地缓存逻辑，不再读取localStorage
+        noteContent.value = "";
+    }
+    initConfig();
 </script>
 </body>
 </html>

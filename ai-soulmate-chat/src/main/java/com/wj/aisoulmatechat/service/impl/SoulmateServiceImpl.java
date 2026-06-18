@@ -4,9 +4,8 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.wj.aisoulmatechat.config.properties.BasePromptConfigProperties;
 import com.wj.aisoulmatechat.config.properties.MyChatMemoryConfigProperties;
-import com.wj.aisoulmatechat.config.properties.MyServerConfigProperties;
-import com.wj.aisoulmatechat.entity.SoulmateAvatar;
-import com.wj.aisoulmatechat.entity.UserSoulmate;
+import com.wj.aisoulmatechat.entity.SoulmateAvatarEntity;
+import com.wj.aisoulmatechat.entity.UserSoulmateEntity;
 import com.wj.aisoulmatechat.mapper.SoulmateAvatarMapper;
 import com.wj.aisoulmatechat.mapper.UserSoulmateMapper;
 import com.wj.aisoulmatechat.service.SoulmateService;
@@ -36,7 +35,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Service
-public class SoulmateServiceImpl extends ServiceImpl<UserSoulmateMapper, UserSoulmate> implements SoulmateService {
+public class SoulmateServiceImpl extends ServiceImpl<UserSoulmateMapper, UserSoulmateEntity> implements SoulmateService {
     private static final Logger log = LoggerFactory.getLogger(SoulmateServiceImpl.class);
 
     private final UserSoulmateMapper smMapper;
@@ -82,9 +81,9 @@ public class SoulmateServiceImpl extends ServiceImpl<UserSoulmateMapper, UserSou
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void saveSoulmate(UserSoulmate soul, String avatarUrl) {
+    public void saveSoulmate(UserSoulmateEntity soul, String avatarUrl) {
         save(soul);
-        SoulmateAvatar av=new SoulmateAvatar();
+        SoulmateAvatarEntity av=new SoulmateAvatarEntity();
         av.setSoulmateId(soul.getId());
         av.setAvatarUrl(avatarUrl);
         avMapper.insert(av);
@@ -106,16 +105,16 @@ public class SoulmateServiceImpl extends ServiceImpl<UserSoulmateMapper, UserSou
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateById(UserSoulmate userSoulmate, SoulmateAvatar soulmateAvatar) {
+    public void updateById(UserSoulmateEntity userSoulmateEntity, SoulmateAvatarEntity soulmateAvatarEntity) {
         //1、删除缓存数据
-        this.clearCache(userSoulmate.getUserId(),userSoulmate.getId());
+        this.clearCache(userSoulmateEntity.getUserId(), userSoulmateEntity.getId());
         //2、更新主表 user_soulmate
-        smMapper.updateById(userSoulmate);
+        smMapper.updateById(userSoulmateEntity);
         //3、更新头像附表 soulmate_avatar
-        avMapper.updateById(soulmateAvatar);
+        avMapper.updateById(soulmateAvatarEntity);
         //4、延时再次删除
         DELAY_EXECUTOR.schedule(
-                () -> clearCache(userSoulmate.getUserId(), userSoulmate.getId()),
+                () -> clearCache(userSoulmateEntity.getUserId(), userSoulmateEntity.getId()),
                 3, TimeUnit.SECONDS
         );
     }

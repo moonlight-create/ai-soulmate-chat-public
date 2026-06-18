@@ -10,7 +10,6 @@ import com.wj.aisoulmatechat.service.SoulmateService;
 import com.wj.aisoulmatechat.vo.ChatMemoryGroupVO;
 import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -19,12 +18,17 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
+import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,19 +41,15 @@ public class AiChatController {
     private final BasePromptConfigProperties basePromptConfigProperties;
     private final ChatClient chatClient;
     private final CustomFullWindowChatMemory messageWindowChatMemory;
-    private final QuestionAnswerAdvisor questionAnswerAdvisor;
     private final ChatMemoryDbService chatMemoryService;
-//    private final RetrievalAugmentationAdvisor retrievalAugmentationAdvisor;
 
-    public AiChatController(@Qualifier("dashscopeChatModel") ChatModel dashscopeChatModel,SoulmateService soulmateService,BasePromptConfigProperties basePromptConfigProperties,ChatClient chatClient,CustomFullWindowChatMemory messageWindowChatMemory,QuestionAnswerAdvisor questionAnswerAdvisor,ChatMemoryDbService chatMemoryService) {
+    public AiChatController(@Qualifier("dashscopeChatModel") ChatModel dashscopeChatModel,SoulmateService soulmateService,BasePromptConfigProperties basePromptConfigProperties,ChatClient chatClient,CustomFullWindowChatMemory messageWindowChatMemory,ChatMemoryDbService chatMemoryService) {
         this.dashScopeChatModel = dashscopeChatModel;
         this.soulmateService = soulmateService;
         this.basePromptConfigProperties = basePromptConfigProperties;
         this.chatClient = chatClient;
         this.messageWindowChatMemory = messageWindowChatMemory;
-        this.questionAnswerAdvisor = questionAnswerAdvisor;
         this.chatMemoryService = chatMemoryService;
-//        this.retrievalAugmentationAdvisor = retrievalAugmentationAdvisor;
     }
 
     @SneakyThrows
@@ -74,33 +74,20 @@ public class AiChatController {
         String fullSysPrompt = soulmateService.getFullSysPrompt(userId, soulmateId, basePromptConfigProperties.getBase());
 
         // 向量数据库过滤条件
-//        String filterExpr = String.format("userId == %d && soulmateId == %d", userId, soulmateId);
-        String filterExpr = String.format("conversationId == '%s'", convId);
-
-        // 构建过滤表达式
-//        FilterExpressionBuilder filterExpressionBuilder = new FilterExpressionBuilder();
-//        Filter.Expression filterExpression = filterExpressionBuilder.eq("conversationId", convId).build();
-
-//        // 动态构建带过滤的 SearchRequest
-//        SearchRequest dynamicSr = SearchRequest.builder()
-//                .topK(4)
-//                .similarityThreshold(0.35d)
-//                .filterExpression(filterExpression)
-//                .build();
+//        String filterExpr = String.format("conversationId == '%s'", convId);
+        String filterExpr = String.format("conversationId == \"%s\"", convId);
 
         return chatClient.prompt()
                 .system(fullSysPrompt)
                 .user(userPrompt)
                 .toolContext(Map.of("soulmateId",soulmateId,"userId",userId,"convId",convId))
                 .advisors(spec -> spec
-                        .advisors(questionAnswerAdvisor)
+//                        .advisors(questionAnswerAdvisor)
                         .param(ChatMemory.CONVERSATION_ID, convId)
-//                        .param(QuestionAnswerAdvisor.FILTER_EXPRESSION, dynamicSr)
-                        .param(QuestionAnswerAdvisor.FILTER_EXPRESSION, filterExpr)
-                                .param("userPrompt", userPrompt)
+//                        .param(QuestionAnswerAdvisor.FILTER_EXPRESSION, filterExpr)
+                        .param(VectorStoreDocumentRetriever.FILTER_EXPRESSION, filterExpr)
+                        .param("userPrompt", userPrompt)
                 )
-//                .advisors(a->a.param(QuestionAnswerAdvisor.FILTER_EXPRESSION,filterExpr))
-//                .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID,convId))
                 .stream()
                 .content();
     }

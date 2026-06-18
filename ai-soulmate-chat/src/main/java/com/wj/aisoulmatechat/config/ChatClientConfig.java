@@ -40,7 +40,7 @@ public class ChatClientConfig {
                                 , MessageChatMemoryAdvisor messageChatMemoryAdvisor
                                 , AiUseTools aiUseTools
                                 , @Qualifier("loggerAdvisor") Advisor loggerAdvisor
-                                , QuestionAnswerAdvisor qaAdvisor
+//                                , QuestionAnswerAdvisor qaAdvisor
                                 , RepeatQuestionLimitAdvisor repeatQuestionLimitAdvisor
                                 , SafeGuardAdvisor safeGuardAdvisor
 //                                , @Qualifier("mijiaMcpTools")ToolCallbackProvider toolCallbackProvider

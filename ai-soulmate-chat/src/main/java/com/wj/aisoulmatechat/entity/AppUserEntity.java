@@ -1,18 +1,20 @@
 package com.wj.aisoulmatechat.entity;
-
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("user_avatar")
-public class UserAvatar {
+public class AppUserEntity implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     @TableId(type = IdType.AUTO)
     private Long id;
-    private Long userId;
-    private String avatarUrl;
+    private String username;
+    private String password;
+    private Integer enable;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

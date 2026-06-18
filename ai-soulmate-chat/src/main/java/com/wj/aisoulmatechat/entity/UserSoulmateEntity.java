@@ -9,11 +9,10 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 
 @Data
 @TableName("user_soulmate")
-public class UserSoulmate {
+public class UserSoulmateEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
     private Long userId;

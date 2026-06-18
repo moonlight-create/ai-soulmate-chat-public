@@ -79,3 +79,16 @@ create table ai_soulmate_chat_memory (
 --      INDEX idx_conversation_id (conversation_id)
 );
 
+-- 备忘录表
+CREATE TABLE memo (
+      id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+      doc_id VARCHAR(64) NOT NULL COMMENT '全局唯一UUID，关联向量库主键',
+      user_id BIGINT NOT NULL COMMENT '所属用户ID',
+      soulmate_id BIGINT NOT NULL COMMENT '虚拟伴侣ID',
+      content TEXT NOT NULL COMMENT '备忘录正文',
+      create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+-- CREATE UNIQUE INDEX uk_doc_id ON memo(doc_id);
+-- CREATE INDEX idx_user_id ON memo(user_id);
+

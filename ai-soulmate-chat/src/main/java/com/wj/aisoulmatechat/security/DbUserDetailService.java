@@ -1,5 +1,5 @@
 package com.wj.aisoulmatechat.security;
-import com.wj.aisoulmatechat.entity.AppUser;
+import com.wj.aisoulmatechat.entity.AppUserEntity;
 import com.wj.aisoulmatechat.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,7 +14,7 @@ public class DbUserDetailService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        AppUser user = userMapper.getByUsername(username);
+        AppUserEntity user = userMapper.getByUsername(username);
         if(user==null){
             throw new UsernameNotFoundException("用户不存在");
         }

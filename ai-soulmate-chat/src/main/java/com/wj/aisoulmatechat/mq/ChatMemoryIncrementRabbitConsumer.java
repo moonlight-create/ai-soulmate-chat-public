@@ -2,7 +2,7 @@ package com.wj.aisoulmatechat.mq;
 
 import com.wj.aisoulmatechat.config.memory.CustomChatMemoryDTO;
 import com.wj.aisoulmatechat.config.mq.RabbitMqConfig;
-import com.wj.aisoulmatechat.entity.ChatMemoryIncrementMsg;
+import com.wj.aisoulmatechat.entity.mq.ChatMemoryIncrementMsg;
 import com.wj.aisoulmatechat.service.ChatMemoryDbService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;

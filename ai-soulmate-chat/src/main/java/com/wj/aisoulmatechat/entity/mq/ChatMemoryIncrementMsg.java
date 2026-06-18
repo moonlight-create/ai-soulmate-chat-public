@@ -1,4 +1,4 @@
-package com.wj.aisoulmatechat.entity;
+package com.wj.aisoulmatechat.entity.mq;
 
 import com.wj.aisoulmatechat.config.memory.CustomChatMemoryDTO;
 import lombok.Data;

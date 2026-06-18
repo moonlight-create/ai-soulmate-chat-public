@@ -1,7 +1,7 @@
 package com.wj.aisoulmatechat.controller;
 
-import com.wj.aisoulmatechat.entity.SoulmateAvatar;
-import com.wj.aisoulmatechat.entity.UserSoulmate;
+import com.wj.aisoulmatechat.entity.SoulmateAvatarEntity;
+import com.wj.aisoulmatechat.entity.UserSoulmateEntity;
 import com.wj.aisoulmatechat.service.SoulmateService;
 import lombok.RequiredArgsConstructor;
 import opennlp.tools.util.StringUtil;
@@ -9,8 +9,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import com.wj.aisoulmatechat.security.LoginUser;
-
-import java.util.Optional;
 
 @Controller()
 @RequiredArgsConstructor
@@ -22,7 +20,7 @@ public class SoulmateSettingController {
 
     // 新增伴侣提交
     @PostMapping("/add")
-    public String add(UserSoulmate soul, @RequestParam("avatarUrl")String avatarUrl, Authentication auth){
+    public String add(UserSoulmateEntity soul, @RequestParam("avatarUrl")String avatarUrl, Authentication auth){
         LoginUser loginUser = (LoginUser) auth.getPrincipal();
         Long userId = loginUser.getUser().getId();
         soul.setUserId(userId);
@@ -34,16 +32,16 @@ public class SoulmateSettingController {
 
     // 修改伴侣提交
     @PostMapping("/update")
-    public String update(UserSoulmate soul,
+    public String update(UserSoulmateEntity soul,
                          @RequestParam("avatarId") Long avatarId,
-                         @RequestParam("avatarUrl") String avatarUrl,Authentication auth){
+                         @RequestParam("avatarUrl") String avatarUrl, Authentication auth){
         LoginUser loginUser = (LoginUser) auth.getPrincipal();
         Long userId = loginUser.getUser().getId();
         soul.setUserId(userId);
-        SoulmateAvatar soulmateAvatar = new SoulmateAvatar();
-        soulmateAvatar.setId(avatarId);
-        soulmateAvatar.setAvatarUrl(avatarUrl);
-        soulmateService.updateById(soul, soulmateAvatar);
+        SoulmateAvatarEntity soulmateAvatarEntity = new SoulmateAvatarEntity();
+        soulmateAvatarEntity.setId(avatarId);
+        soulmateAvatarEntity.setAvatarUrl(avatarUrl);
+        soulmateService.updateById(soul, soulmateAvatarEntity);
         return "redirect:/toChat?sid="+soul.getId();
     }
 

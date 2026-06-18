@@ -2,12 +2,11 @@ package com.wj.aisoulmatechat.mq;
 
 import com.wj.aisoulmatechat.config.memory.CustomChatMemoryDTO;
 import com.wj.aisoulmatechat.config.memory.CustomFullWindowChatMemory;
-import com.wj.aisoulmatechat.entity.ChatMemoryIncrementMsg;
+import com.wj.aisoulmatechat.entity.mq.ChatMemoryIncrementMsg;
 import com.wj.aisoulmatechat.service.ChatMemoryDbService;
 import lombok.RequiredArgsConstructor;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
