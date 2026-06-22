@@ -1,5 +1,9 @@
 package com.wj.aisoulmatechat.config;
 
+import com.alibaba.cloud.ai.advisor.RetrievalRerankAdvisor;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
+import com.alibaba.cloud.ai.model.RerankModel;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -10,6 +14,8 @@ import org.springframework.ai.transformer.splitter.TextSplitter;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -54,6 +60,34 @@ public class RagConfig {
     }
 
     @Bean
+    public RetrievalRerankAdvisor soulmateRerankAdvisor(VectorStore vectorStore, RerankModel rerankModel) {
+        // 向量检索
+        SearchRequest searchRequest = SearchRequest.builder()
+                .topK(4)
+                .similarityThreshold(0.1d)
+                .build();
+
+        // Prompt模板
+        PromptTemplate rerankPrompt = new PromptTemplate("""
+            【知识库内容】
+            {question_answer_context}
+            用户问题：{query}
+            有资料依托资料回答，无资料正常聊天，不许说看不懂。
+            """);
+
+        RetrievalRerankAdvisor rerankAdvisor = new RetrievalRerankAdvisor(
+                vectorStore,
+                rerankModel,
+                searchRequest,
+                rerankPrompt,
+                0.1d,
+                0
+        );
+
+        return rerankAdvisor;
+    }
+
+//    @Bean
     public RetrievalAugmentationAdvisor soulmateRagAdvisor(VectorStore vectorStore) {
         VectorStoreDocumentRetriever retriever = VectorStoreDocumentRetriever.builder()
                 .vectorStore(vectorStore)
@@ -84,8 +118,6 @@ public class RagConfig {
                         .promptTemplate(ragPrompt)
                         .emptyContextPromptTemplate(emptyTpl)
                         .build())
-                // 可选：增加查询重写（模糊问句自动优化检索词）
-                //.queryTransformers(RewriteQueryTransformer.builder(ChatClient.builder(chatModel)).build())
                 .build();
 
         return ragAdvisor;

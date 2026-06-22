@@ -10,5 +10,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/avatar/soulmate/file/**")
                 .addResourceLocations("file:" + System.getProperty("user.dir") + "/avatar/soulmate/file/");
+        registry.addResourceHandler("/avatar/soulmate/default/**")
+                .addResourceLocations("file:" + System.getProperty("user.dir") + "/avatar/soulmate/default/");
     }
 }

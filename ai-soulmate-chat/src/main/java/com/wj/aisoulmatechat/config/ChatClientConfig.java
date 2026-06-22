@@ -1,5 +1,6 @@
 package com.wj.aisoulmatechat.config;
 
+import com.alibaba.cloud.ai.advisor.RetrievalRerankAdvisor;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.wj.aisoulmatechat.config.customadvisors.EvaluatorCheckAdvisor;
 import com.wj.aisoulmatechat.config.customadvisors.KeywordFilterAdvisor;
@@ -45,7 +46,8 @@ public class ChatClientConfig {
                                 , SafeGuardAdvisor safeGuardAdvisor
 //                                , @Qualifier("mijiaMcpTools")ToolCallbackProvider toolCallbackProvider
                                 , ToolCallbackProvider toolCallbackProvider
-                                , RetrievalAugmentationAdvisor retrievalAugmentationAdvisor
+//                                , RetrievalAugmentationAdvisor retrievalAugmentationAdvisor
+                                 , RetrievalRerankAdvisor rerankAdvisor
                                 , KeywordFilterAdvisor keywordFilterAdvisor,
                                  EvaluatorCheckAdvisor evaluatorCheckAdvisor
                                  ){
@@ -58,9 +60,10 @@ public class ChatClientConfig {
                     ,messageChatMemoryAdvisor
                     ,loggerAdvisor
 //                    ,qaAdvisor
-                    ,retrievalAugmentationAdvisor,
-                    keywordFilterAdvisor
-//                    evaluatorCheckAdvisor
+//                    ,retrievalAugmentationAdvisor
+                    ,rerankAdvisor
+                    ,keywordFilterAdvisor
+//                    ,evaluatorCheckAdvisor
                 )
                 .build();
     }

@@ -18,7 +18,7 @@ import java.util.UUID;
 public class SoulmateAvatarServiceImpl extends ServiceImpl<SoulmateAvatarMapper, SoulmateAvatarEntity> implements SoulmateAvatarService {
     private final SoulmateAvatarMapper avMapper;
     // 默认头像路径
-    public static final String DEFAULT_AVATAR = "https://picsum.photos/id/64/300/300";
+    //public static final String DEFAULT_AVATAR = "https://picsum.photos/id/64/300/300";
     // 图片存储路径
     private static final String DIR = System.getProperty("user.dir") + "/avatar/soulmate/file";
 

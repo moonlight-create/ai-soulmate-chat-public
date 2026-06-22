@@ -1,14 +1,17 @@
 package com.wj.aisoulmatechat.controller;
 
 import com.wj.aisoulmatechat.common.result.Result;
+import com.wj.aisoulmatechat.config.properties.MyAvatarConfigProperties;
 import com.wj.aisoulmatechat.dto.UserSoulmateDTO;
 import com.wj.aisoulmatechat.entity.SoulmateAvatarEntity;
+import com.wj.aisoulmatechat.service.SoulmateAvatarService;
 import com.wj.aisoulmatechat.service.SoulmateService;
 import com.wj.aisoulmatechat.util.SecurityUserUtil;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import opennlp.tools.util.StringUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,8 +21,9 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 public class SoulmateSettingController {
     private final SoulmateService soulmateService;
+    private final MyAvatarConfigProperties myAvatarConfigProperties;
     //默认头像
-    private static final String DEFAULT_AVATAR = "https://picsum.photos/id/64/300/300";
+//    private static final String DEFAULT_AVATAR = "https://picsum.photos/id/64/300/300";
 
     // 新增伴侣提交
     @PostMapping("/add")
@@ -31,7 +35,7 @@ public class SoulmateSettingController {
         soul.setUserId(userId);
         //填充默认字段
         soul.setDefaultValue();
-        soulmateService.saveSoulmate(soul, StringUtil.isEmpty(avatarUrl) ? DEFAULT_AVATAR : avatarUrl);
+        soulmateService.saveSoulmate(soul, StringUtil.isEmpty(avatarUrl) ? myAvatarConfigProperties.getDefaultUrl() : avatarUrl);
         return Result.ok("创建成功","/select_soulmate");
     }
 

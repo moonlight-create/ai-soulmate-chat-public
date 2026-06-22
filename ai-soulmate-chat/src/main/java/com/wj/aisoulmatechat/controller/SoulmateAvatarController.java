@@ -1,10 +1,12 @@
 package com.wj.aisoulmatechat.controller;
 
 import com.wj.aisoulmatechat.common.result.Result;
+import com.wj.aisoulmatechat.config.properties.MyAvatarConfigProperties;
 import com.wj.aisoulmatechat.service.SoulmateAvatarService;
 import com.wj.aisoulmatechat.service.impl.SoulmateAvatarServiceImpl;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Validated
 public class SoulmateAvatarController {
     private final SoulmateAvatarService soulmateAvatarService;
+    private final MyAvatarConfigProperties myAvatarConfigProperties;
 
     // 根据伴侣ID查询头像链接，无数据返回默认头像
     @GetMapping("/get")
@@ -22,7 +25,8 @@ public class SoulmateAvatarController {
             @NotNull(message = "伴侣ID不能为空") @RequestParam Long soulmateId
     ) {
         String url = soulmateAvatarService.getSoumateAvatar(soulmateId);
-        String res = url == null ? SoulmateAvatarServiceImpl.DEFAULT_AVATAR : url;
+//        String res = url == null ? SoulmateAvatarServiceImpl.DEFAULT_AVATAR : url;
+        String res = url == null ? myAvatarConfigProperties.getDefaultUrl() : url;
         return Result.ok(res);
     }
 

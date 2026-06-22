@@ -29,6 +29,13 @@ spring:
       audio:
         speech:
           api-key: sk-xxx #换成自己的大模型api-key
+      read-timeout: 120
+      # Rerank重排模型全局配置
+      rerank:
+        options:
+          model: qwen3-rerank
+          top-n: 2
+          return-documents: true
     openai:
       api-key: sk-xxx #换成自己的大模型api-key
       base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
@@ -95,6 +102,10 @@ my:
     avatar_upload_ip: 127.0.0.1
   server:
     ip: http://${my.ip.avatar_upload_ip}:${server.port}
+  # 默认伴侣头像(在服务器自定义默认头像路径)
+  avatar:
+    default:
+      url: /avatar/soulmate/default/default_avatar.png
 # 自定义ToolCallbackProvider配置mcp参数
   mcp:
     mijia:
