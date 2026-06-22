@@ -1,5 +1,6 @@
 package com.wj.aisoulmatechat.service.impl;
 
+import com.alibaba.cloud.ai.advisor.RetrievalRerankAdvisor;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.wj.aisoulmatechat.common.util.ConversationUtil;
 import com.wj.aisoulmatechat.config.memory.CustomFullWindowChatMemory;
@@ -54,7 +55,11 @@ public class AiChatServiceImpl implements AiChatService {
         // 拼接人设
         String fullSysPrompt = soulmateService.getFullSysPrompt(userId, soulmateId, basePromptConfigProperties.getBase());
         // 向量过滤
-        String filterExpr = String.format("conversationId == \"%s\"", convId);
+//        String filterExpr = String.format("conversationId == \"%s\"", convId);
+        String filterExpr = String.format(
+                "conversationId == \"%s\" && soulmateId == %d && userId == %d",
+                convId, soulmateId, userId
+        );
 
         return chatClient.prompt()
                 .system(fullSysPrompt)
@@ -63,6 +68,7 @@ public class AiChatServiceImpl implements AiChatService {
                 .advisors(spec -> spec
                         .param(ChatMemory.CONVERSATION_ID, convId)
                         .param(VectorStoreDocumentRetriever.FILTER_EXPRESSION, filterExpr)
+                        .param(RetrievalRerankAdvisor.FILTER_EXPRESSION, filterExpr)
                         .param("userPrompt", userPrompt)
                 )
                 .stream()

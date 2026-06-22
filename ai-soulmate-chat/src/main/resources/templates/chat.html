@@ -132,7 +132,7 @@
             <!-- 聊天记录容器 -->
             <div id="chatContent" class="flex-1 overflow-y-auto p-5 space-y-4">
                 <div class="flex gap-3">
-                    <img id="chatAvatarLeft" th:src="${soulmate_avatar_info.avatarUrl ?: '/default.png'}" class="w-10 h-10 rounded-full object-cover shrink-0">
+                    <img id="chatAvatarLeft" th:src="${soulmate_avatar_info.avatarUrl ?: '/avatar/soulmate/default/default_avatar.png'}" class="w-10 h-10 rounded-full object-cover shrink-0">
                     <div class="bg-loveLight px-4 py-3 rounded-xl rounded-tl-none max-w-[75%]">
                         <p id="firstMsg"></p>
                     </div>
@@ -254,7 +254,7 @@
     let girlConfig = {
         avatarId: avatarInitData?.avatarId ?? "",
         soulmateId: soulmateInitData?.soulmateId ?? "",
-        avatar: avatarInitData?.avatarUrl || "/default.png",
+        avatar: avatarInitData?.avatarUrl || "/avatar/soulmate/default/default_avatar.png",
         name: soulmateInitData?.gfName || "小桃",
         age: soulmateInitData?.age || 18,
         birth: soulmateInitData?.birth || "",
@@ -447,7 +447,7 @@
         setModal.classList.replace("hidden","flex");
         // 每次打开弹窗重新加载头像预览
         const previewImg = document.getElementById("previewImg");
-        if(girlConfig.avatar && girlConfig.avatar !== "/default.png"){
+        if(girlConfig.avatar && girlConfig.avatar !== "/avatar/soulmate/default/default_avatar.png"){
             previewImg.src = girlConfig.avatar;
             previewImg.classList.remove("hidden");
         }else{
