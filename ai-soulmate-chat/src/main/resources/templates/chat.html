@@ -250,6 +250,7 @@
     const avatarInitData = /*[[${soulmate_avatar_info}]]*/{};
     const STORAGE_KEY = "girlFriendSet";
     let tempUploadUrl = ""; //临时存本次上传图片地址
+    let isAvatarUploading = false; // 新增：头像上传中标记，控制保存按钮状态
 
     let girlConfig = {
         avatarId: avatarInitData?.avatarId ?? "",
@@ -443,43 +444,67 @@
     }
     loadFirstHello();
 
-    openSetBtn.onclick = ()=> {
-        setModal.classList.replace("hidden","flex");
+    openSetBtn.onclick = () => {
+        setModal.classList.replace("hidden", "flex");
+        // 每次打开弹窗重置上传标记
+        isAvatarUploading = false;
+        saveSet.disabled = false;
+        saveSet.classList.remove("opacity-50", "cursor-not-allowed");
         // 每次打开弹窗重新加载头像预览
         const previewImg = document.getElementById("previewImg");
-        if(girlConfig.avatar && girlConfig.avatar !== "/avatar/soulmate/default/default_avatar.png"){
+        if (girlConfig.avatar && girlConfig.avatar !== "/avatar/soulmate/default/default_avatar.png") {
             previewImg.src = girlConfig.avatar;
             previewImg.classList.remove("hidden");
-        }else{
+        } else {
             previewImg.classList.add("hidden");
             previewImg.src = "";
         }
     };
-    closeModal.onclick = ()=> setModal.classList.add("hidden");
+    closeModal.onclick = () => setModal.classList.add("hidden");
 
-    avatarUpload.onchange = async function(){
+    avatarUpload.onchange = async function () {
         const file = this.files[0];
-        if(!file) return;
+        if (!file) return;
         //本地预览（瞬间出现，不用等后端）
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = e=>{
+        reader.onload = e => {
             previewImg.src = e.target.result;
             previewImg.classList.remove("hidden");
         }
 
+        // ========== 改动1：标记上传中，锁定保存按钮 ==========
+        isAvatarUploading = true;
+        saveSet.disabled = true;
+        saveSet.classList.add("opacity-50", "cursor-not-allowed");
+
         let fd = new FormData();
-        fd.append("file",file);
-        let res = await fetch("/avatar/soulmate/upload",{method:"POST",body:fd});
-        let jsonUpload = await res.json();
-        tempUploadUrl = jsonUpload.code === 1 ? jsonUpload.data : "";
-        //左侧头像同步刷新
-        girlAvatar.src = tempUploadUrl;
-        chatAvatarLeft.src = tempUploadUrl;
+        fd.append("file", file);
+        try {
+            let res = await fetch("/avatar/soulmate/upload", { method: "POST", body: fd });
+            let jsonUpload = await res.json();
+            tempUploadUrl = jsonUpload.code === 1 ? jsonUpload.data : "";
+            //左侧头像同步刷新
+            girlAvatar.src = tempUploadUrl;
+            chatAvatarLeft.src = tempUploadUrl;
+        } catch (err) {
+            alert("头像上传失败，请重新选择图片");
+            console.error("头像上传异常：", err);
+        } finally {
+            // ========== 改动2：上传完成/失败都解锁保存按钮 ==========
+            isAvatarUploading = false;
+            saveSet.disabled = false;
+            saveSet.classList.remove("opacity-50", "cursor-not-allowed");
+        }
     }
 
-    //保存按钮 —— 【添加必填校验】
+    //保存按钮 —— 【添加必填校验 + 上传状态拦截】
     saveSet.onclick = async () => {
+        // ========== 改动3：二次校验，上传中直接阻断保存 ==========
+        if (isAvatarUploading) {
+            alert("头像正在上传，请等待上传完成后再保存配置！");
+            return;
+        }
 
         const nameVal = nameInput.value.trim();
         const personVal = personInput.value.trim();
@@ -501,7 +526,7 @@
             return;
         }
 
-        if(tempUploadUrl) girlConfig.avatar = tempUploadUrl;
+        if (tempUploadUrl) girlConfig.avatar = tempUploadUrl;
         let selectSex = document.querySelector('input[name="sexRadio"]:checked')?.value || "女";
         girlConfig.name = nameVal;
         girlConfig.birth = birthInput.value.trim();
@@ -513,18 +538,18 @@
         girlConfig.sex = selectSex;
 
         let formData = new FormData();
-        if(girlConfig.soulmateId) formData.append("id", girlConfig.soulmateId);
+        if (girlConfig.soulmateId) formData.append("id", girlConfig.soulmateId);
         formData.append("gfName", girlConfig.name);
         formData.append("age", girlConfig.age);
-        if(girlConfig.birth) formData.append("birth", girlConfig.birth);
+        if (girlConfig.birth) formData.append("birth", girlConfig.birth);
         formData.append("hobby", girlConfig.hobby);
         formData.append("characterTag", girlConfig.person);
         formData.append("detailPrompt", girlConfig.remark);
         formData.append("sex", selectSex);
-        if(girlConfig.avatarId) formData.append("avatarId", girlConfig.avatarId);
-        if(girlConfig.avatar) formData.append("avatarUrl", girlConfig.avatar);
+        if (girlConfig.avatarId) formData.append("avatarId", girlConfig.avatarId);
+        if (girlConfig.avatar) formData.append("avatarUrl", girlConfig.avatar);
 
-        await fetch("/setting/soulmate/update", {method:"POST", body: formData});
+        await fetch("/setting/soulmate/update", { method: "POST", body: formData });
         tempUploadUrl = "";
         previewImg.classList.add("hidden");
         previewImg.src = "";
@@ -565,9 +590,9 @@
     }
 
     //聊天发送
-    async function sendChat(){
+    async function sendChat() {
         const content = userInput.value.trim();
-        if(!content) return;
+        if (!content) return;
         userInput.value = "";
         //我方消息
         chatContent.innerHTML += `
@@ -597,8 +622,8 @@
         let typingLock = false;
 
         // 逐个字符输出
-        async function typeWriter(){
-            if(typingLock || typeQueue.length ===0) return;
+        async function typeWriter() {
+            if (typingLock || typeQueue.length === 0) return;
             typingLock = true;
             const char = typeQueue.shift();
             tempText.innerText += char;
@@ -608,29 +633,29 @@
             typeWriter();
         }
         //延时工具
-        function sleep(ms){
-            return new Promise(res=>setTimeout(res,ms))
+        function sleep(ms) {
+            return new Promise(res => setTimeout(res, ms))
         }
 
-        const resp = await fetch("/chat/ai-chat-stream",{
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json",
-                "Accept":"text/event-stream"
+        const resp = await fetch("/chat/ai-chat-stream", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "text/event-stream"
             },
-            body:JSON.stringify({userPrompt:content,soulmateId:girlConfig.soulmateId})
+            body: JSON.stringify({ userPrompt: content, soulmateId: girlConfig.soulmateId })
         });
         const reader = resp.body.getReader();
         const decoder = new TextDecoder();
 
-        while(true){
-            const {done,value} = await reader.read();
-            if(done) break;
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
             let chunk = decoder.decode(value);
-            chunk = chunk.replaceAll("data:","").replaceAll("\n","");
+            chunk = chunk.replaceAll("data:", "").replaceAll("\n", "");
             fullAiText += chunk;
             //新字符推入打字队列
-            for(let c of chunk){
+            for (let c of chunk) {
                 typeQueue.push(c);
             }
             //启动打字
@@ -639,8 +664,8 @@
         }
     }
     sendBtn.onclick = sendChat;
-    userInput.onkeydown = (e)=>{
-        if(e.key === "Enter" && !e.shiftKey){
+    userInput.onkeydown = (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             sendChat();
         }
@@ -718,7 +743,7 @@
     }
 
     //初始化页面
-    function initConfig(){
+    function initConfig() {
         girlAvatar.src = girlConfig.avatar;
         chatAvatarLeft.src = girlConfig.avatar;
         nameInput.value = girlConfig.name;
@@ -726,7 +751,7 @@
         hobbyInput.value = girlConfig.hobby;
         personInput.value = girlConfig.person;
         remarkInput.value = girlConfig.remark;
-        document.querySelectorAll('input[name="sexRadio"]').forEach(item=>{
+        document.querySelectorAll('input[name="sexRadio"]').forEach(item => {
             item.checked = item.value === girlConfig.sex;
         })
         document.getElementById("girlName").innerText = girlConfig.name;
@@ -736,10 +761,10 @@
         document.getElementById("girlRemark").innerText = girlConfig.remark;
 
         const previewImg = document.getElementById("previewImg");
-        if(girlConfig.avatar && girlConfig.avatar !== "/default.png"){
+        if (girlConfig.avatar && girlConfig.avatar !== "/avatar/soulmate/default/default_avatar.png") {
             previewImg.src = girlConfig.avatar;
             previewImg.classList.remove("hidden");
-        }else{
+        } else {
             previewImg.classList.add("hidden");
             previewImg.src = "";
         }

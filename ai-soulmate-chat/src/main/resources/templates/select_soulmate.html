@@ -162,6 +162,8 @@
     const tip = document.getElementById('tip');
     const previewImg = document.getElementById('previewImg');
     const createForm = document.getElementById('createForm');
+    const saveBtn = document.querySelector('.btn-save'); // 获取保存按钮DOM
+    let isUploading = false; // 头像上传状态标记
 
     // 打开弹窗
     function openDialog(){
@@ -174,6 +176,11 @@
         avaUrl.value = '';
         // 清空输入框
         createForm.querySelectorAll('input,textarea').forEach(el => el.value = '');
+        // 弹窗打开重置上传状态，恢复按钮
+        isUploading = false;
+        saveBtn.disabled = false;
+        saveBtn.style.opacity = "1";
+        saveBtn.style.cursor = "pointer";
     }
     //关闭弹窗
     function closeDialog(){
@@ -184,22 +191,42 @@
     fileInp.onchange = async function(){
         let file = this.files[0];
         if(!file) return;
+        // 标记上传中，锁定保存按钮
+        isUploading = true;
+        saveBtn.disabled = true;
+        saveBtn.style.opacity = "0.5";
+        saveBtn.style.cursor = "not-allowed";
+        tip.innerText = "⏳ 头像上传中，请稍候...";
+        tip.style.color = "#3b82f6";
+
         let fd = new FormData();
         fd.append("file",file);
-        let res = await fetch("/avatar/soulmate/upload",{method:'POST',body:fd});
-        let jsonRes = await res.json();
-        // 统一返回解析
-        if(jsonRes.code === 1){
-            let url = jsonRes.data;
-            avaUrl.value = url;
-            tip.innerText = '✅ 头像上传成功';
-            tip.style.color = '#16a34a';
-            // 预览赋值、显示
-            previewImg.src = url;
-            previewImg.style.display = 'block';
-        }else{
-            tip.innerText = '❌ ' + jsonRes.msg;
-            tip.style.color = '#ef4444';
+        try {
+            let res = await fetch("/avatar/soulmate/upload",{method:'POST',body:fd});
+            let jsonRes = await res.json();
+            // 统一返回解析
+            if(jsonRes.code === 1){
+                let url = jsonRes.data;
+                avaUrl.value = url;
+                tip.innerText = '✅ 头像上传成功';
+                tip.style.color = '#16a34a';
+                // 预览赋值、显示
+                previewImg.src = url;
+                previewImg.style.display = 'block';
+            }else{
+                tip.innerText = '❌ ' + jsonRes.msg;
+                tip.style.color = '#ef4444';
+            }
+        } catch (err) {
+            tip.innerText = "❌ 上传请求异常，请重试";
+            tip.style.color = "#ef4444";
+            console.error("头像上传失败：", err);
+        } finally {
+            // 无论成功失败，都解除按钮锁定
+            isUploading = false;
+            saveBtn.disabled = false;
+            saveBtn.style.opacity = "1";
+            saveBtn.style.cursor = "pointer";
         }
     }
 
@@ -217,6 +244,12 @@
 
     // 新增：创建表单异步提交方法
     async function submitCreate(){
+        // 前置拦截：头像正在上传则禁止提交
+        if(isUploading) {
+            alert("头像正在上传，请等待上传完成后再保存！");
+            return;
+        }
+
         // 1. 表单非空校验
         const gfName = createForm.querySelector('input[name="gfName"]').value.trim();
         const characterTag = createForm.querySelector('input[name="characterTag"]').value.trim();
